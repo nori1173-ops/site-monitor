@@ -161,6 +161,26 @@ Resources:
         - Key: Name
           Value: ApiStack
 
+  NotifierStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: stacks/notifier/template.yaml
+      Parameters:
+        StackName: !Ref StackName
+        ProjectName: !Ref ProjectName
+        OsasiPowertoolsPython: !Ref OsasiPowertoolsPython
+        LogLevel: !Ref LogLevel
+        SitesTableName: !GetAtt DatabaseStack.Outputs.SitesTableName
+        SitesTableArn: !GetAtt DatabaseStack.Outputs.SitesTableArn
+        NotificationsTableName: !GetAtt DatabaseStack.Outputs.NotificationsTableName
+        NotificationsTableArn: !GetAtt DatabaseStack.Outputs.NotificationsTableArn
+        NotificationQueueArn: !GetAtt QueueStack.Outputs.NotificationQueueArn
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Name
+          Value: NotifierStack
+
   WebStack:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -203,3 +223,5 @@ Outputs:
     Value: !GetAtt CheckerStack.Outputs.CheckerFunctionArn
   SchedulerExecutionRoleArn:
     Value: !GetAtt ApiStack.Outputs.SchedulerExecutionRoleArn
+  NotifierFunctionArn:
+    Value: !GetAtt NotifierStack.Outputs.NotifierFunctionArn

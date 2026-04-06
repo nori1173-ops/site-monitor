@@ -39,6 +39,12 @@ Parameters:
     Type: String
   CloudWatchLogQueueArn:
     Type: String
+  EmailDomain:
+    Type: String
+    Default: alive.osasi-cloud.com
+  SesRegion:
+    Type: String
+    Default: us-west-2
 
 Resources:
   Api:
@@ -85,6 +91,8 @@ Resources:
           CHECKER_FUNCTION_ARN: !Sub 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${StackName}-checker'
           SCHEDULER_ROLE_ARN: !GetAtt SchedulerExecutionRole.Arn
           SCHEDULER_GROUP_NAME: default
+          EMAIL_DOMAIN: !Ref EmailDomain
+          SES_REGION: !Ref SesRegion
       Events:
         AnyApi:
           Type: Api
@@ -172,6 +180,25 @@ Resources:
               - Effect: Allow
                 Action: lambda:InvokeFunction
                 Resource: !Sub 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${StackName}-checker'
+        - PolicyName: SESSendEmail
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ses:SendEmail
+                  - ses:SendRawEmail
+                Resource: '*'
+                Condition:
+                  StringEquals:
+                    ses:FromAddress: !Sub 'noreply@${EmailDomain}'
+        - PolicyName: SSMGetParameter
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: ssm:GetParameter
+                Resource: !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/web-alive/*'
         - PolicyName: CloudWatchLogsDescribe
           PolicyDocument:
             Version: '2012-10-17'

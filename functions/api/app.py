@@ -449,10 +449,77 @@ def test_check(event: dict) -> dict:
 
 @route("POST", "/sites/{site_id}/test-notify")
 def test_notify(event: dict) -> dict:
-    """テスト通知。Phase 4で本格実装。"""
-    return success_response({
-        "message": "Test notify stub - will be implemented in Phase 4",
-    })
+    """テスト通知 — 全通知先にテストメッセージを送信する"""
+    site_id = event["pathParameters"]["site_id"]
+
+    sites_table = _get_dynamodb().Table(SITES_TABLE)
+    site_result = sites_table.get_item(Key={"site_id": site_id})
+    if "Item" not in site_result:
+        return error_response("Site not found", status_code=404)
+
+    site = site_result["Item"]
+    site_name = site.get("site_name", "")
+
+    notif_table = _get_dynamodb().Table(NOTIFICATIONS_TABLE)
+    notif_result = notif_table.query(
+        KeyConditionExpression="site_id = :sid",
+        ExpressionAttributeValues={":sid": site_id},
+    )
+    notifications = notif_result.get("Items", [])
+
+    if not notifications:
+        return error_response("通知先が設定されていません", status_code=400)
+
+    email_domain = os.environ.get("EMAIL_DOMAIN", "alive.osasi-cloud.com")
+    ses_region = os.environ.get("SES_REGION", "us-west-2")
+    results = []
+
+    for notif in notifications:
+        if not notif.get("enabled", True):
+            continue
+
+        notif_type = notif.get("type", "")
+        try:
+            if notif_type == "email":
+                ses_client = boto3.client("ses", region_name=ses_region)
+                ses_client.send_email(
+                    Source=f"OSASI.NET<noreply@{email_domain}>",
+                    Destination={"ToAddresses": [notif["destination"]]},
+                    Message={
+                        "Subject": {
+                            "Data": f"[Web Alive] {site_name} - テスト通知",
+                            "Charset": "UTF-8",
+                        },
+                        "Body": {
+                            "Text": {
+                                "Data": f"これはテスト通知です。\n【現場名】{site_name}\n通知設定が正しく動作しています。",
+                                "Charset": "UTF-8",
+                            },
+                        },
+                    },
+                )
+                results.append({"type": "email", "destination": notif["destination"], "status": "sent"})
+            elif notif_type == "slack":
+                import requests as req
+
+                ssm_client = boto3.client("ssm")
+                ssm_result = ssm_client.get_parameter(
+                    Name=notif["destination"], WithDecryption=True
+                )
+                webhook_url = ssm_result["Parameter"]["Value"]
+                mention = notif.get("mention", "")
+                lines = []
+                if mention:
+                    lines.append(mention)
+                lines.append(f"これはテスト通知です。\n*現場名:* {site_name}\n通知設定が正しく動作しています。")
+                resp = req.post(webhook_url, json={"text": "\n".join(lines)}, timeout=10)
+                resp.raise_for_status()
+                results.append({"type": "slack", "destination": notif["destination"], "status": "sent"})
+        except Exception as e:
+            logger.error("Test notify failed", {"type": notif_type, "error": str(e)})
+            results.append({"type": notif_type, "destination": notif.get("destination", ""), "status": "failed", "error": str(e)})
+
+    return success_response({"results": results})
 
 
 # --- CloudWatch endpoints ---
