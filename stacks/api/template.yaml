@@ -165,6 +165,13 @@ Resources:
                 Resource:
                   - !Ref NotificationQueueArn
                   - !Ref CloudWatchLogQueueArn
+        - PolicyName: InvokeCheckerLambda
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: lambda:InvokeFunction
+                Resource: !Sub 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${StackName}-checker'
         - PolicyName: CloudWatchLogsDescribe
           PolicyDocument:
             Version: '2012-10-17'

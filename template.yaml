@@ -109,6 +109,29 @@ Resources:
         - Key: Name
           Value: QueueStack
 
+  CheckerStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: stacks/checker/template.yaml
+      Parameters:
+        StackName: !Ref StackName
+        ProjectName: !Ref ProjectName
+        OsasiPowertoolsPython: !Ref OsasiPowertoolsPython
+        LogLevel: !Ref LogLevel
+        SitesTableName: !GetAtt DatabaseStack.Outputs.SitesTableName
+        SitesTableArn: !GetAtt DatabaseStack.Outputs.SitesTableArn
+        CheckResultsTableName: !GetAtt DatabaseStack.Outputs.CheckResultsTableName
+        CheckResultsTableArn: !GetAtt DatabaseStack.Outputs.CheckResultsTableArn
+        StatusChangesTableName: !GetAtt DatabaseStack.Outputs.StatusChangesTableName
+        StatusChangesTableArn: !GetAtt DatabaseStack.Outputs.StatusChangesTableArn
+        NotificationQueueUrl: !GetAtt QueueStack.Outputs.NotificationQueueUrl
+        NotificationQueueArn: !GetAtt QueueStack.Outputs.NotificationQueueArn
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Name
+          Value: CheckerStack
+
   ApiStack:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -176,5 +199,7 @@ Outputs:
     Value: !GetAtt WebStack.Outputs.CustomDomainUrl
   ApiUrl:
     Value: !GetAtt ApiStack.Outputs.ApiUrl
+  CheckerFunctionArn:
+    Value: !GetAtt CheckerStack.Outputs.CheckerFunctionArn
   SchedulerExecutionRoleArn:
     Value: !GetAtt ApiStack.Outputs.SchedulerExecutionRoleArn

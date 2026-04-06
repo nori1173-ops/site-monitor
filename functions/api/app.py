@@ -421,7 +421,7 @@ def delete_notification(event: dict) -> dict:
 
 @route("POST", "/sites/{site_id}/test-check")
 def test_check(event: dict) -> dict:
-    """簡易版テストチェック。Phase 3で本格実装。"""
+    """手動チェック実行 — checker Lambdaを同期Invokeする"""
     site_id = event["pathParameters"]["site_id"]
 
     sites_table = _get_dynamodb().Table(SITES_TABLE)
@@ -429,10 +429,22 @@ def test_check(event: dict) -> dict:
     if "Item" not in site_result:
         return error_response("Site not found", status_code=404)
 
-    return success_response({
-        "message": "Test check stub - will be implemented in Phase 3",
-        "site_id": site_id,
-    })
+    checker_arn = os.environ.get("CHECKER_FUNCTION_ARN", "")
+    if not checker_arn:
+        return error_response("Checker function not configured", status_code=500)
+
+    try:
+        lambda_client = boto3.client("lambda")
+        response = lambda_client.invoke(
+            FunctionName=checker_arn,
+            InvocationType="RequestResponse",
+            Payload=json.dumps({"site_id": site_id}),
+        )
+        payload = json.loads(response["Payload"].read())
+        return success_response(payload)
+    except Exception as e:
+        logger.error("Test check failed", {"error": str(e)})
+        return error_response("チェック実行に失敗しました", status_code=500)
 
 
 @route("POST", "/sites/{site_id}/test-notify")
