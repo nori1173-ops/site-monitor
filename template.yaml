@@ -1,0 +1,147 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Web Alive Monitoring - Main Stack
+
+Parameters:
+  StackName:
+    Type: String
+    Default: WebAliveMonitoring-Dev
+  ProjectName:
+    Type: String
+    Default: web-alive-monitoring
+  OsasiPowertoolsPython:
+    Type: String
+    Default: arn:aws:lambda:ap-northeast-1:989982802989:layer:OsasiPowertoolsPython:79
+  LogLevel:
+    Type: String
+    Default: DEBUG
+    AllowedValues:
+      - DEBUG
+      - INFO
+      - WARNING
+      - ERROR
+  SubDomain:
+    Type: String
+    Default: web-alive-dev
+  AllowedIpAddresses:
+    Type: CommaDelimitedList
+    Default: 210.225.75.184
+  HostedZoneId:
+    Type: String
+    Default: Z2TVUBVNI4RE7N
+  AcmCertificateArn:
+    Type: String
+    Default: arn:aws:acm:us-east-1:989982802989:certificate/a6adb70c-a211-42cf-b43f-e290affd19f1
+
+Globals:
+  Function:
+    Runtime: python3.13
+    MemorySize: 128
+    Timeout: 30
+    Architectures:
+      - x86_64
+    Layers:
+      - !Ref OsasiPowertoolsPython
+    Environment:
+      Variables:
+        LOG_LEVEL: !Ref LogLevel
+        STACK_NAME: !Ref StackName
+    Tags:
+      Project: !Ref ProjectName
+
+Resources:
+  CognitoPreSignUpFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub '${StackName}-cognito-pre-signup'
+      Handler: app.handler
+      CodeUri: functions/cognito_trigger/
+      Layers: []
+      Tags:
+        Project: !Ref ProjectName
+        Name: CognitoPreSignUpFunction
+
+  CognitoPreSignUpPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt CognitoPreSignUpFunction.Arn
+      Action: lambda:InvokeFunction
+      Principal: cognito-idp.amazonaws.com
+      SourceArn: !GetAtt AuthStack.Outputs.UserPoolArn
+
+  DatabaseStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: stacks/database/template.yaml
+      Parameters:
+        StackName: !Ref StackName
+        ProjectName: !Ref ProjectName
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Name
+          Value: DatabaseStack
+
+  AuthStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: stacks/auth/template.yaml
+      Parameters:
+        StackName: !Ref StackName
+        ProjectName: !Ref ProjectName
+        PreSignUpFunctionArn: !GetAtt CognitoPreSignUpFunction.Arn
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Name
+          Value: AuthStack
+
+  QueueStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: stacks/queue/template.yaml
+      Parameters:
+        StackName: !Ref StackName
+        ProjectName: !Ref ProjectName
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Name
+          Value: QueueStack
+
+  WebStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: stacks/web/template.yaml
+      Parameters:
+        StackName: !Ref StackName
+        ProjectName: !Ref ProjectName
+        SubDomain: !Ref SubDomain
+        HostedZoneId: !Ref HostedZoneId
+        AcmCertificateArn: !Ref AcmCertificateArn
+        AllowedIpAddresses: !Join [',', !Ref AllowedIpAddresses]
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Name
+          Value: WebStack
+
+Outputs:
+  SitesTableName:
+    Value: !GetAtt DatabaseStack.Outputs.SitesTableName
+  CheckResultsTableName:
+    Value: !GetAtt DatabaseStack.Outputs.CheckResultsTableName
+  NotificationsTableName:
+    Value: !GetAtt DatabaseStack.Outputs.NotificationsTableName
+  StatusChangesTableName:
+    Value: !GetAtt DatabaseStack.Outputs.StatusChangesTableName
+  UserPoolId:
+    Value: !GetAtt AuthStack.Outputs.UserPoolId
+  UserPoolClientId:
+    Value: !GetAtt AuthStack.Outputs.UserPoolClientId
+  WebsiteBucketName:
+    Value: !GetAtt WebStack.Outputs.WebsiteBucketName
+  CloudFrontDistributionId:
+    Value: !GetAtt WebStack.Outputs.CloudFrontDistributionId
+  CustomDomainUrl:
+    Value: !GetAtt WebStack.Outputs.CustomDomainUrl

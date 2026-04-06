@@ -1,0 +1,56 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Web Alive Monitoring - SES EmailIdentity (alive.osasi-cloud.com)
+
+Parameters:
+  StackName:
+    Type: String
+  EmailDomain:
+    Type: String
+  HostedZoneId:
+    Type: String
+
+Resources:
+  EmailIdentity:
+    Type: AWS::SES::EmailIdentity
+    Properties:
+      EmailIdentity: !Ref EmailDomain
+      MailFromAttributes:
+        MailFromDomain: !Sub 'bounce.${EmailDomain}'
+
+  RecordSetGroup:
+    Type: AWS::Route53::RecordSetGroup
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      RecordSets:
+        - Name: !Sub 'bounce.${EmailDomain}'
+          Type: MX
+          ResourceRecords:
+            - 10 feedback-smtp.us-west-2.amazonses.com
+          TTL: '1800'
+        - Name: !Sub 'bounce.${EmailDomain}'
+          Type: TXT
+          ResourceRecords:
+            - '"v=spf1 include:amazonses.com ~all"'
+          TTL: '300'
+        - Name: !GetAtt EmailIdentity.DkimDNSTokenName1
+          Type: CNAME
+          ResourceRecords:
+            - !GetAtt EmailIdentity.DkimDNSTokenValue1
+          TTL: '1800'
+        - Name: !GetAtt EmailIdentity.DkimDNSTokenName2
+          Type: CNAME
+          ResourceRecords:
+            - !GetAtt EmailIdentity.DkimDNSTokenValue2
+          TTL: '1800'
+        - Name: !GetAtt EmailIdentity.DkimDNSTokenName3
+          Type: CNAME
+          ResourceRecords:
+            - !GetAtt EmailIdentity.DkimDNSTokenValue3
+          TTL: '1800'
+
+Outputs:
+  EmailDomain:
+    Value: !Ref EmailDomain
+  EmailIdentityArn:
+    Value: !Sub 'arn:aws:ses:${AWS::Region}:${AWS::AccountId}:identity/${EmailDomain}'
