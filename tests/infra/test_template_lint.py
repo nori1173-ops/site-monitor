@@ -14,6 +14,7 @@ TEMPLATE_FILES = [
     PROJECT_ROOT / "stacks" / "queue" / "template.yaml",
     PROJECT_ROOT / "stacks" / "web" / "template.yaml",
     PROJECT_ROOT / "stacks" / "ses" / "template.yaml",
+    PROJECT_ROOT / "stacks" / "api" / "template.yaml",
 ]
 
 

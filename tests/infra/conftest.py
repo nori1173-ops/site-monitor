@@ -58,6 +58,11 @@ def web_template():
 
 
 @pytest.fixture
+def api_template():
+    return load_template("api")
+
+
+@pytest.fixture
 def ses_template():
     path = STACKS_DIR / "ses" / "template.yaml"
     with open(path) as f:

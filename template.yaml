@@ -109,6 +109,35 @@ Resources:
         - Key: Name
           Value: QueueStack
 
+  ApiStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: stacks/api/template.yaml
+      Parameters:
+        StackName: !Ref StackName
+        ProjectName: !Ref ProjectName
+        OsasiPowertoolsPython: !Ref OsasiPowertoolsPython
+        LogLevel: !Ref LogLevel
+        AllowedIpAddresses: !Join [',', !Ref AllowedIpAddresses]
+        UserPoolArn: !GetAtt AuthStack.Outputs.UserPoolArn
+        SitesTableName: !GetAtt DatabaseStack.Outputs.SitesTableName
+        SitesTableArn: !GetAtt DatabaseStack.Outputs.SitesTableArn
+        CheckResultsTableName: !GetAtt DatabaseStack.Outputs.CheckResultsTableName
+        CheckResultsTableArn: !GetAtt DatabaseStack.Outputs.CheckResultsTableArn
+        NotificationsTableName: !GetAtt DatabaseStack.Outputs.NotificationsTableName
+        NotificationsTableArn: !GetAtt DatabaseStack.Outputs.NotificationsTableArn
+        StatusChangesTableName: !GetAtt DatabaseStack.Outputs.StatusChangesTableName
+        StatusChangesTableArn: !GetAtt DatabaseStack.Outputs.StatusChangesTableArn
+        NotificationQueueUrl: !GetAtt QueueStack.Outputs.NotificationQueueUrl
+        NotificationQueueArn: !GetAtt QueueStack.Outputs.NotificationQueueArn
+        CloudWatchLogQueueUrl: !GetAtt QueueStack.Outputs.CloudWatchLogQueueUrl
+        CloudWatchLogQueueArn: !GetAtt QueueStack.Outputs.CloudWatchLogQueueArn
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Name
+          Value: ApiStack
+
   WebStack:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -145,3 +174,7 @@ Outputs:
     Value: !GetAtt WebStack.Outputs.CloudFrontDistributionId
   CustomDomainUrl:
     Value: !GetAtt WebStack.Outputs.CustomDomainUrl
+  ApiUrl:
+    Value: !GetAtt ApiStack.Outputs.ApiUrl
+  SchedulerExecutionRoleArn:
+    Value: !GetAtt ApiStack.Outputs.SchedulerExecutionRoleArn
