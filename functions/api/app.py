@@ -322,6 +322,20 @@ def get_site_results(event: dict) -> dict:
     return success_response(_decimal_to_native(result.get("Items", [])))
 
 
+@route("GET", "/sites/{site_id}/status-changes")
+def get_site_status_changes(event: dict) -> dict:
+    site_id = event["pathParameters"]["site_id"]
+    table = _get_dynamodb().Table(STATUS_CHANGES_TABLE)
+
+    result = table.query(
+        KeyConditionExpression="site_id = :sid",
+        ExpressionAttributeValues={":sid": site_id},
+        ScanIndexForward=False,
+    )
+
+    return success_response(_decimal_to_native(result.get("Items", [])))
+
+
 # --- Notifications endpoints ---
 
 @route("GET", "/sites/{site_id}/notifications")

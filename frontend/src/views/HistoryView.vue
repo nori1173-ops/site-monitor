@@ -19,15 +19,31 @@
         />
       </div>
 
+      <v-progress-linear v-if="loading" indeterminate color="primary" class="mb-2" />
+
       <v-card>
         <v-tabs v-model="activeTab" color="primary">
           <v-tab value="check-history">
             <v-icon icon="mdi-format-list-checks" class="mr-2" />
             チェック履歴
+            <v-badge
+              v-if="sortedCheckResults.length > 0"
+              :content="sortedCheckResults.length"
+              color="primary"
+              inline
+              class="ml-2"
+            />
           </v-tab>
           <v-tab value="status-changes">
             <v-icon icon="mdi-swap-horizontal" class="mr-2" />
             状態変化履歴
+            <v-badge
+              v-if="sortedStatusChanges.length > 0"
+              :content="sortedStatusChanges.length"
+              color="primary"
+              inline
+              class="ml-2"
+            />
           </v-tab>
         </v-tabs>
 
@@ -35,10 +51,15 @@
 
         <v-tabs-window v-model="activeTab">
           <v-tabs-window-item value="check-history">
+            <div v-if="loading" class="pa-4">
+              <v-skeleton-loader v-for="i in 3" :key="i" type="table-row" class="mb-2" />
+            </div>
             <v-data-table
+              v-else
               :headers="checkHeaders"
               :items="sortedCheckResults"
-              :items-per-page="5"
+              :items-per-page="10"
+              :items-per-page-options="[5, 10, 25, 50]"
               class="elevation-0"
             >
               <template #item.checked_at="{ value }">
@@ -52,6 +73,11 @@
                   variant="flat"
                 />
               </template>
+              <template #item.consecutive_miss_count="{ value }">
+                <span :class="value > 0 ? 'text-error font-weight-bold' : ''">
+                  {{ value }}
+                </span>
+              </template>
               <template #no-data>
                 <div class="text-center py-8 text-medium-emphasis">
                   <v-icon icon="mdi-clipboard-text-off-outline" size="48" class="mb-3" />
@@ -62,7 +88,11 @@
           </v-tabs-window-item>
 
           <v-tabs-window-item value="status-changes">
-            <div v-if="sortedStatusChanges.length === 0" class="text-center py-12 text-medium-emphasis">
+            <div v-if="loading" class="pa-4">
+              <v-skeleton-loader v-for="i in 3" :key="i" type="list-item-three-line" class="mb-2" />
+            </div>
+
+            <div v-else-if="sortedStatusChanges.length === 0" class="text-center py-12 text-medium-emphasis">
               <v-icon icon="mdi-timeline-clock-outline" size="48" class="mb-3" />
               <p>状態変化の履歴はまだありません</p>
             </div>
@@ -80,18 +110,37 @@
                 :icon="getTimelineIcon(change)"
                 size="small"
               >
-                <v-card variant="tonal" class="pa-3">
-                  <div class="text-caption text-medium-emphasis mb-1">
-                    {{ formatDateTime(change.changed_at) }}
-                  </div>
-                  <div class="font-weight-medium mb-1">
-                    {{ translateStatus(change.previous_status) }} → {{ translateStatus(change.new_status) }}
-                  </div>
-                  <div class="text-caption text-medium-emphasis">
-                    <v-icon icon="mdi-link-variant" size="14" class="mr-1" />
-                    {{ change.trigger_url }}
-                  </div>
-                </v-card>
+                <transition name="slide" appear>
+                  <v-card variant="tonal" class="pa-3 timeline-card">
+                    <div class="d-flex align-center justify-space-between mb-1">
+                      <div class="text-caption text-medium-emphasis">
+                        {{ formatDateTime(change.changed_at) }}
+                      </div>
+                      <div v-if="idx > 0" class="text-caption text-disabled">
+                        {{ getTimeDiff(sortedStatusChanges[idx - 1].changed_at, change.changed_at) }}
+                      </div>
+                    </div>
+                    <div class="d-flex align-center ga-2 mb-1">
+                      <v-chip
+                        :color="getStatusColor(change.previous_status)"
+                        :text="translateStatus(change.previous_status)"
+                        size="x-small"
+                        variant="flat"
+                      />
+                      <v-icon icon="mdi-arrow-right" size="16" />
+                      <v-chip
+                        :color="getStatusColor(change.new_status)"
+                        :text="translateStatus(change.new_status)"
+                        size="x-small"
+                        variant="flat"
+                      />
+                    </div>
+                    <div class="text-caption text-medium-emphasis">
+                      <v-icon icon="mdi-link-variant" size="14" class="mr-1" />
+                      {{ change.trigger_url }}
+                    </div>
+                  </v-card>
+                </transition>
               </v-timeline-item>
             </v-timeline>
           </v-tabs-window-item>
@@ -119,13 +168,20 @@ import AppLayout from '../components/AppLayout.vue'
 
 const route = useRoute()
 const sitesStore = useSitesStore()
+const loading = ref(true)
 
 onMounted(async () => {
-  if (!sitesStore.getSiteById(siteId.value)) {
-    await sitesStore.fetchSites()
+  try {
+    if (!sitesStore.getSiteById(siteId.value)) {
+      await sitesStore.fetchSites()
+    }
+    await Promise.all([
+      sitesStore.fetchCheckResults(siteId.value),
+      sitesStore.fetchStatusChanges(siteId.value),
+    ])
+  } finally {
+    loading.value = false
   }
-  await sitesStore.fetchCheckResults(siteId.value)
-  await sitesStore.fetchStatusChanges(siteId.value)
 })
 
 const siteId = computed(() => route.params.id as string)
@@ -181,6 +237,16 @@ function formatDateTime(isoString: string): string {
   })
 }
 
+function getTimeDiff(olderIso: string, newerIso: string): string {
+  const diff = new Date(olderIso).getTime() - new Date(newerIso).getTime()
+  const minutes = Math.floor(diff / 60000)
+  if (minutes < 60) return `${minutes}分後`
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) return `${hours}時間後`
+  const days = Math.floor(hours / 24)
+  return `${days}日後`
+}
+
 function getStatusColor(status: string): string {
   if (status === 'updated') return 'success'
   if (status === 'error') return 'warning'
@@ -212,3 +278,19 @@ function getTimelineIcon(change: StatusChange): string {
   return 'mdi-alert-circle'
 }
 </script>
+
+<style scoped>
+.timeline-card {
+  transition: transform 0.2s ease;
+}
+.timeline-card:hover {
+  transform: translateX(4px);
+}
+.slide-enter-active {
+  transition: all 0.3s ease;
+}
+.slide-enter-from {
+  opacity: 0;
+  transform: translateX(-20px);
+}
+</style>
