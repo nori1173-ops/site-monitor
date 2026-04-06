@@ -161,6 +161,30 @@ Resources:
         - Key: Name
           Value: ApiStack
 
+  CwCheckerStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: stacks/cw_checker/template.yaml
+      Parameters:
+        StackName: !Ref StackName
+        ProjectName: !Ref ProjectName
+        OsasiPowertoolsPython: !Ref OsasiPowertoolsPython
+        LogLevel: !Ref LogLevel
+        SitesTableName: !GetAtt DatabaseStack.Outputs.SitesTableName
+        SitesTableArn: !GetAtt DatabaseStack.Outputs.SitesTableArn
+        CheckResultsTableName: !GetAtt DatabaseStack.Outputs.CheckResultsTableName
+        CheckResultsTableArn: !GetAtt DatabaseStack.Outputs.CheckResultsTableArn
+        StatusChangesTableName: !GetAtt DatabaseStack.Outputs.StatusChangesTableName
+        StatusChangesTableArn: !GetAtt DatabaseStack.Outputs.StatusChangesTableArn
+        NotificationQueueUrl: !GetAtt QueueStack.Outputs.NotificationQueueUrl
+        NotificationQueueArn: !GetAtt QueueStack.Outputs.NotificationQueueArn
+        CloudWatchLogQueueArn: !GetAtt QueueStack.Outputs.CloudWatchLogQueueArn
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Name
+          Value: CwCheckerStack
+
   NotifierStack:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -225,3 +249,5 @@ Outputs:
     Value: !GetAtt ApiStack.Outputs.SchedulerExecutionRoleArn
   NotifierFunctionArn:
     Value: !GetAtt NotifierStack.Outputs.NotifierFunctionArn
+  CwCheckerFunctionArn:
+    Value: !GetAtt CwCheckerStack.Outputs.CwCheckerFunctionArn

@@ -1,0 +1,137 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Web Alive Monitoring - CloudWatch Log Checker Lambda
+
+Parameters:
+  StackName:
+    Type: String
+  ProjectName:
+    Type: String
+  OsasiPowertoolsPython:
+    Type: String
+  LogLevel:
+    Type: String
+  SitesTableName:
+    Type: String
+  SitesTableArn:
+    Type: String
+  CheckResultsTableName:
+    Type: String
+  CheckResultsTableArn:
+    Type: String
+  StatusChangesTableName:
+    Type: String
+  StatusChangesTableArn:
+    Type: String
+  NotificationQueueUrl:
+    Type: String
+  NotificationQueueArn:
+    Type: String
+  CloudWatchLogQueueArn:
+    Type: String
+
+Resources:
+  CwCheckerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub '${StackName}-cw-checker'
+      Handler: app.handler
+      CodeUri: ../../functions/cw_checker/
+      Runtime: python3.13
+      MemorySize: 256
+      Timeout: 300
+      ReservedConcurrentExecutions: 1
+      Layers:
+        - !Ref OsasiPowertoolsPython
+      Role: !GetAtt CwCheckerFunctionRole.Arn
+      Environment:
+        Variables:
+          LOG_LEVEL: !Ref LogLevel
+          STACK_NAME: !Ref StackName
+          SITES_TABLE_NAME: !Ref SitesTableName
+          CHECK_RESULTS_TABLE_NAME: !Ref CheckResultsTableName
+          STATUS_CHANGES_TABLE_NAME: !Ref StatusChangesTableName
+          NOTIFICATION_QUEUE_URL: !Ref NotificationQueueUrl
+      Events:
+        SQSEvent:
+          Type: SQS
+          Properties:
+            Queue: !Ref CloudWatchLogQueueArn
+            BatchSize: 1
+      Tags:
+        Project: !Ref ProjectName
+        Name: CwCheckerFunction
+
+  CwCheckerFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/lambda/${CwCheckerFunction}'
+      RetentionInDays: 365
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Name
+          Value: CwCheckerFunctionLogGroup
+
+  CwCheckerFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${StackName}-cw-checker-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DynamoDBAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:Query
+                Resource:
+                  - !Ref SitesTableArn
+                  - !Ref CheckResultsTableArn
+                  - !Ref StatusChangesTableArn
+        - PolicyName: SQSAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: sqs:SendMessage
+                Resource: !Ref NotificationQueueArn
+              - Effect: Allow
+                Action:
+                  - sqs:ReceiveMessage
+                  - sqs:DeleteMessage
+                  - sqs:GetQueueAttributes
+                Resource: !Ref CloudWatchLogQueueArn
+        - PolicyName: CloudWatchLogsInsights
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:StartQuery
+                  - logs:GetQueryResults
+                  - logs:StopQuery
+                Resource: '*'
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Name
+          Value: CwCheckerFunctionRole
+
+Outputs:
+  CwCheckerFunctionArn:
+    Value: !GetAtt CwCheckerFunction.Arn
+  CwCheckerFunctionName:
+    Value: !Ref CwCheckerFunction

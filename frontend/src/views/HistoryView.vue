@@ -111,7 +111,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useSitesStore } from '../stores/sites'
 import type { StatusChange } from '../data/mock-data'
@@ -119,6 +119,14 @@ import AppLayout from '../components/AppLayout.vue'
 
 const route = useRoute()
 const sitesStore = useSitesStore()
+
+onMounted(async () => {
+  if (!sitesStore.getSiteById(siteId.value)) {
+    await sitesStore.fetchSites()
+  }
+  await sitesStore.fetchCheckResults(siteId.value)
+  await sitesStore.fetchStatusChanges(siteId.value)
+})
 
 const siteId = computed(() => route.params.id as string)
 const site = computed(() => sitesStore.getSiteById(siteId.value))

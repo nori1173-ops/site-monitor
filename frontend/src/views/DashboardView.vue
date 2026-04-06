@@ -65,7 +65,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useSitesStore } from '../stores/sites'
 import { useAuthStore } from '../stores/auth'
@@ -80,6 +80,10 @@ const authStore = useAuthStore()
 const searchQuery = ref('')
 const statusFilter = ref('all')
 const ownerFilter = ref('mine')
+
+onMounted(async () => {
+  await sitesStore.fetchSites()
+})
 
 const filteredSites = computed(() => {
   let result = [...sitesStore.sites]

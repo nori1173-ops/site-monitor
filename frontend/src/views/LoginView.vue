@@ -8,6 +8,17 @@
           <p class="text-body-2 text-medium-emphasis mt-1">ログイン</p>
         </div>
 
+        <v-alert
+          v-if="authStore.error"
+          type="error"
+          variant="tonal"
+          class="mb-4"
+          closable
+          @click:close="authStore.error = null"
+        >
+          {{ authStore.error }}
+        </v-alert>
+
         <v-form @submit.prevent="handleLogin" ref="formRef">
           <v-text-field
             v-model="email"
@@ -32,7 +43,7 @@
             color="primary"
             block
             size="large"
-            :loading="loading"
+            :loading="authStore.loading"
           >
             ログイン
           </v-btn>
@@ -55,22 +66,22 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 
 const router = useRouter()
-const auth = useAuthStore()
-const email = ref('miyaji@osasi.co.jp')
+const authStore = useAuthStore()
+const email = ref('')
 const password = ref('')
 const showPassword = ref(false)
-const loading = ref(false)
 const formRef = ref()
 
 async function handleLogin() {
   const { valid } = await formRef.value.validate()
   if (!valid) return
-  loading.value = true
-  setTimeout(() => {
-    auth.login(email.value)
-    loading.value = false
+
+  try {
+    await authStore.login(email.value, password.value)
     router.push({ name: 'dashboard' })
-  }, 300)
+  } catch {
+    // error is handled by authStore.error
+  }
 }
 </script>
 

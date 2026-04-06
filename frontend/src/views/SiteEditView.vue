@@ -9,6 +9,17 @@
         {{ isEditMode ? 'サイト編集' : 'サイト新規登録' }}
       </h1>
 
+      <v-alert
+        v-if="sitesStore.error"
+        type="error"
+        variant="tonal"
+        class="mb-4"
+        closable
+        @click:close="sitesStore.error = null"
+      >
+        {{ sitesStore.error }}
+      </v-alert>
+
       <v-form ref="formRef" v-model="formValid" @submit.prevent="handleSave">
         <!-- セクション1: 基本情報 -->
         <v-card class="mb-6 pa-6" border>
@@ -103,6 +114,7 @@
             <v-select
               v-model="cwForm.log_group"
               :items="logGroupOptions"
+              :loading="loadingLogGroups"
               label="ロググループ"
               :rules="[rules.required]"
               class="mb-2"
@@ -128,7 +140,8 @@
               variant="tonal"
               color="secondary"
               prepend-icon="mdi-magnify"
-              @click="showCwTestResult = true"
+              :loading="testSearchLoading"
+              @click="handleTestSearch"
             >
               テスト検索
             </v-btn>
@@ -141,8 +154,8 @@
               @click:close="showCwTestResult = false"
             >
               <div class="font-weight-bold">テスト検索結果</div>
-              <div>ヒット件数: 42件</div>
-              <div>最終ヒット: 2026-04-06 09:45:00</div>
+              <div>ヒット件数: {{ cwTestResult?.hit_count ?? 0 }}件</div>
+              <div>最終ヒット: {{ cwTestResult?.latest_timestamp ?? '-' }}</div>
             </v-alert>
           </div>
         </v-card>
@@ -241,11 +254,12 @@
         </v-card>
 
         <!-- テストチェック実行 -->
-        <v-card class="mb-6 pa-6" border>
+        <v-card v-if="isEditMode" class="mb-6 pa-6" border>
           <v-btn
             variant="outlined"
             color="secondary"
             prepend-icon="mdi-play-circle-outline"
+            :loading="testCheckLoading"
             @click="handleTestCheck"
           >
             テストチェック実行
@@ -254,7 +268,7 @@
 
         <!-- アクションボタン -->
         <div class="d-flex ga-3">
-          <v-btn type="submit" color="primary" size="large" :disabled="!formValid">
+          <v-btn type="submit" color="primary" size="large" :disabled="!formValid" :loading="sitesStore.loading">
             保存
           </v-btn>
           <v-btn variant="outlined" size="large" @click="router.push('/')">
@@ -284,7 +298,7 @@
           <v-card-actions class="pa-0">
             <v-spacer />
             <v-btn variant="text" @click="showDeleteDialog = false">キャンセル</v-btn>
-            <v-btn color="error" variant="flat" @click="handleDelete">削除する</v-btn>
+            <v-btn color="error" variant="flat" :loading="sitesStore.loading" @click="handleDelete">削除する</v-btn>
           </v-card-actions>
         </v-card>
       </v-dialog>
@@ -294,38 +308,7 @@
         <v-card class="pa-6">
           <v-card-title class="text-h6 pa-0 mb-4">テストチェック結果</v-card-title>
           <v-card-text class="pa-0 mb-4">
-            <div v-if="form.monitor_type === 'url_check'">
-              <v-table density="compact">
-                <thead>
-                  <tr>
-                    <th>URL</th>
-                    <th>状態</th>
-                    <th>Last-Modified</th>
-                    <th>ETag</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="(target, i) in urlTargets" :key="i">
-                    <td class="text-caption">{{ target.url || '(未入力)' }}</td>
-                    <td>
-                      <v-chip
-                        :color="i % 2 === 0 ? 'success' : 'warning'"
-                        size="small"
-                        label
-                      >
-                        {{ i % 2 === 0 ? 'updated' : 'not_updated' }}
-                      </v-chip>
-                    </td>
-                    <td class="text-caption">{{ i % 2 === 0 ? '2026-04-06T09:00:00' : '-' }}</td>
-                    <td class="text-caption">{{ i % 2 === 0 ? '"abc123"' : '-' }}</td>
-                  </tr>
-                </tbody>
-              </v-table>
-            </div>
-            <div v-else>
-              <div class="mb-2"><strong>ヒット件数:</strong> 42件</div>
-              <div><strong>最終ヒット日時:</strong> 2026-04-06 09:45:00</div>
-            </div>
+            <pre class="text-body-2">{{ JSON.stringify(testCheckResult, null, 2) }}</pre>
           </v-card-text>
           <v-card-actions class="pa-0">
             <v-spacer />
@@ -333,6 +316,10 @@
           </v-card-actions>
         </v-card>
       </v-dialog>
+
+      <v-snackbar v-model="snackbar" :timeout="3000" :color="snackbarColor">
+        {{ snackbarText }}
+      </v-snackbar>
     </v-container>
   </AppLayout>
 </template>
@@ -352,18 +339,19 @@ const formValid = ref(false)
 const showDeleteDialog = ref(false)
 const showTestDialog = ref(false)
 const showCwTestResult = ref(false)
+const testCheckLoading = ref(false)
+const testSearchLoading = ref(false)
+const testCheckResult = ref<unknown>(null)
+const cwTestResult = ref<{ hit_count: number; latest_timestamp: string | null } | null>(null)
+const loadingLogGroups = ref(false)
+const snackbar = ref(false)
+const snackbarText = ref('')
+const snackbarColor = ref('success')
 
 const isEditMode = computed(() => route.params.id !== 'new')
-const existingSite = computed(() =>
-  isEditMode.value ? sitesStore.getSiteById(route.params.id as string) : undefined,
-)
+const existingSite = ref<Site | undefined>(undefined)
 
-const logGroupOptions = [
-  'DataTransferSystem2-OsBoard-Function1',
-  'NetMAIL-Backend-Subscriber',
-  'NetMAIL-Backend-Worker',
-  'NetMAIL-Backend-Publisher',
-]
+const logGroupOptions = ref<string[]>([])
 
 const intervalOptions = [
   { label: '5分', value: 5 },
@@ -422,53 +410,84 @@ function buildTargets(): Site['targets'] {
   return [{ ...cwForm } as CloudWatchLogTarget]
 }
 
-function handleSave() {
-  const now = new Date().toISOString()
+function showMessage(text: string, color: string = 'success') {
+  snackbarText.value = text
+  snackbarColor.value = color
+  snackbar.value = true
+}
+
+async function handleSave() {
   const targets = buildTargets()
+  const siteData = {
+    site_name: form.site_name,
+    monitor_type: form.monitor_type,
+    targets,
+    schedule_start: form.schedule_start,
+    schedule_interval_minutes: form.schedule_interval_minutes,
+    consecutive_threshold: form.consecutive_threshold,
+    enabled: form.enabled,
+  }
 
   if (isEditMode.value) {
-    sitesStore.updateSite(route.params.id as string, {
-      site_name: form.site_name,
-      monitor_type: form.monitor_type,
-      targets,
-      schedule_start: form.schedule_start,
-      schedule_interval_minutes: form.schedule_interval_minutes,
-      consecutive_threshold: form.consecutive_threshold,
-      enabled: form.enabled,
-      updated_by: 'miyaji@osasi.co.jp',
-      updated_at: now,
-    })
-  } else {
-    const newSite: Site = {
-      site_id: `site-${String(Date.now()).slice(-6)}`,
-      site_name: form.site_name,
-      monitor_type: form.monitor_type,
-      targets,
-      schedule_start: form.schedule_start,
-      schedule_interval_minutes: form.schedule_interval_minutes,
-      consecutive_threshold: form.consecutive_threshold,
-      enabled: form.enabled,
-      last_check_status: 'updated',
-      last_checked_at: now,
-      consecutive_miss_count: 0,
-      created_by: 'miyaji@osasi.co.jp',
-      updated_by: 'miyaji@osasi.co.jp',
-      created_at: now,
-      updated_at: now,
+    const result = await sitesStore.updateSite(route.params.id as string, siteData)
+    if (result) {
+      showMessage('サイトを更新しました')
+      router.push('/')
     }
-    sitesStore.addSite(newSite)
+  } else {
+    const result = await sitesStore.createSite(siteData)
+    if (result) {
+      showMessage('サイトを登録しました')
+      router.push('/')
+    }
   }
-  router.push('/')
 }
 
-function handleDelete() {
-  sitesStore.deleteSite(route.params.id as string)
-  showDeleteDialog.value = false
-  router.push('/')
+async function handleDelete() {
+  const result = await sitesStore.deleteSite(route.params.id as string)
+  if (result) {
+    showDeleteDialog.value = false
+    router.push('/')
+  }
 }
 
-function handleTestCheck() {
-  showTestDialog.value = true
+async function handleTestCheck() {
+  testCheckLoading.value = true
+  try {
+    const result = await sitesStore.testCheck(route.params.id as string)
+    testCheckResult.value = result
+    showTestDialog.value = true
+  } catch {
+    showMessage('テストチェックに失敗しました', 'error')
+  } finally {
+    testCheckLoading.value = false
+  }
+}
+
+async function handleTestSearch() {
+  if (!isEditMode.value) {
+    showCwTestResult.value = true
+    cwTestResult.value = { hit_count: 0, latest_timestamp: null }
+    return
+  }
+  testSearchLoading.value = true
+  try {
+    const result = await sitesStore.testCheck(route.params.id as string) as Record<string, unknown>
+    const results = result?.results as Array<Record<string, unknown>> | undefined
+    if (results && results.length > 0) {
+      cwTestResult.value = {
+        hit_count: (results[0].hit_count as number) ?? 0,
+        latest_timestamp: (results[0].latest_timestamp as string) ?? null,
+      }
+    } else {
+      cwTestResult.value = { hit_count: 0, latest_timestamp: null }
+    }
+    showCwTestResult.value = true
+  } catch {
+    showMessage('テスト検索に失敗しました', 'error')
+  } finally {
+    testSearchLoading.value = false
+  }
 }
 
 function isUrlTarget(t: unknown): t is UrlTarget {
@@ -479,30 +498,49 @@ function isCwTarget(t: unknown): t is CloudWatchLogTarget {
   return typeof t === 'object' && t !== null && 'log_group' in t
 }
 
-onMounted(() => {
-  if (isEditMode.value && existingSite.value) {
-    const site = existingSite.value
-    form.site_name = site.site_name
-    form.monitor_type = site.monitor_type
-    form.schedule_start = site.schedule_start
-    form.schedule_interval_minutes = site.schedule_interval_minutes
-    form.consecutive_threshold = site.consecutive_threshold
-    form.enabled = site.enabled
+async function loadLogGroups() {
+  loadingLogGroups.value = true
+  try {
+    const groups = await sitesStore.fetchLogGroups()
+    logGroupOptions.value = groups.map((g) => g.logGroupName)
+  } catch {
+    logGroupOptions.value = []
+  } finally {
+    loadingLogGroups.value = false
+  }
+}
 
-    if (site.monitor_type === 'url_check') {
-      urlTargets.value = site.targets
-        .filter(isUrlTarget)
-        .map((t) => ({ url: t.url }))
-      if (urlTargets.value.length === 0) {
-        urlTargets.value = [{ url: '' }]
-      }
-    } else {
-      const target = site.targets.find(isCwTarget)
-      if (target) {
-        cwForm.log_group = target.log_group
-        cwForm.message_filter = target.message_filter
-        cwForm.json_search_word = target.json_search_word
-        cwForm.search_period_minutes = target.search_period_minutes
+onMounted(async () => {
+  loadLogGroups()
+
+  if (isEditMode.value) {
+    const site = sitesStore.getSiteById(route.params.id as string)
+      ?? await sitesStore.fetchSiteById(route.params.id as string)
+
+    if (site) {
+      existingSite.value = site
+      form.site_name = site.site_name
+      form.monitor_type = site.monitor_type
+      form.schedule_start = site.schedule_start
+      form.schedule_interval_minutes = site.schedule_interval_minutes
+      form.consecutive_threshold = site.consecutive_threshold
+      form.enabled = site.enabled
+
+      if (site.monitor_type === 'url_check') {
+        urlTargets.value = site.targets
+          .filter(isUrlTarget)
+          .map((t) => ({ url: t.url }))
+        if (urlTargets.value.length === 0) {
+          urlTargets.value = [{ url: '' }]
+        }
+      } else {
+        const target = site.targets.find(isCwTarget)
+        if (target) {
+          cwForm.log_group = target.log_group
+          cwForm.message_filter = target.message_filter
+          cwForm.json_search_word = target.json_search_word
+          cwForm.search_period_minutes = target.search_period_minutes
+        }
       }
     }
   }

@@ -8,6 +8,17 @@
           <p class="text-body-2 text-medium-emphasis mt-1">アカウント登録</p>
         </div>
 
+        <v-alert
+          v-if="errorMessage"
+          type="error"
+          variant="tonal"
+          class="mb-4"
+          closable
+          @click:close="errorMessage = ''"
+        >
+          {{ errorMessage }}
+        </v-alert>
+
         <template v-if="step === 'register'">
           <v-form @submit.prevent="handleSignup" ref="formRef">
             <v-text-field
@@ -35,7 +46,7 @@
               color="primary"
               block
               size="large"
-              :loading="loading"
+              :loading="authStore.loading"
             >
               サインアップ
             </v-btn>
@@ -65,7 +76,7 @@
               color="primary"
               block
               size="large"
-              :loading="loading"
+              :loading="authStore.loading"
             >
               確認
             </v-btn>
@@ -93,14 +104,16 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '../stores/auth'
 
 const router = useRouter()
+const authStore = useAuthStore()
 const step = ref<'register' | 'verify' | 'complete'>('register')
 const email = ref('')
 const password = ref('')
 const showPassword = ref(false)
 const verificationCode = ref('')
-const loading = ref(false)
+const errorMessage = ref('')
 const formRef = ref()
 
 const emailRules = [
@@ -117,19 +130,24 @@ const passwordRules = [
 async function handleSignup() {
   const { valid } = await formRef.value.validate()
   if (!valid) return
-  loading.value = true
-  setTimeout(() => {
-    loading.value = false
+
+  try {
+    errorMessage.value = ''
+    await authStore.register(email.value, password.value)
     step.value = 'verify'
-  }, 500)
+  } catch (e: unknown) {
+    errorMessage.value = e instanceof Error ? e.message : 'サインアップに失敗しました'
+  }
 }
 
-function handleVerify() {
-  loading.value = true
-  setTimeout(() => {
-    loading.value = false
+async function handleVerify() {
+  try {
+    errorMessage.value = ''
+    await authStore.confirmRegistration(email.value, verificationCode.value)
     step.value = 'complete'
-  }, 500)
+  } catch (e: unknown) {
+    errorMessage.value = e instanceof Error ? e.message : '確認コードの検証に失敗しました'
+  }
 }
 </script>
 
