@@ -23,7 +23,7 @@ Resources:
   WebsiteBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub '${StackName}-website-${AWS::AccountId}'
+      BucketName: !Sub '${SubDomain}-website-${AWS::AccountId}'
       PublicAccessBlockConfiguration:
         BlockPublicAcls: true
         BlockPublicPolicy: true
