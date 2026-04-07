@@ -1,0 +1,277 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Web Alive Monitoring - API Gateway + Lambda
+
+Parameters:
+  StackName:
+    Type: String
+  ProjectName:
+    Type: String
+  OsasiPowertoolsPython:
+    Type: String
+  LogLevel:
+    Type: String
+  AllowedIpAddresses:
+    Type: CommaDelimitedList
+  UserPoolArn:
+    Type: String
+  SitesTableName:
+    Type: String
+  SitesTableArn:
+    Type: String
+  CheckResultsTableName:
+    Type: String
+  CheckResultsTableArn:
+    Type: String
+  NotificationsTableName:
+    Type: String
+  NotificationsTableArn:
+    Type: String
+  StatusChangesTableName:
+    Type: String
+  StatusChangesTableArn:
+    Type: String
+  NotificationQueueUrl:
+    Type: String
+  NotificationQueueArn:
+    Type: String
+  CloudWatchLogQueueUrl:
+    Type: String
+  CloudWatchLogQueueArn:
+    Type: String
+  EmailDomain:
+    Type: String
+    Default: alive.osasi-cloud.com
+  SesRegion:
+    Type: String
+    Default: us-west-2
+
+Resources:
+  Api:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: Prod
+      Auth:
+        DefaultAuthorizer: CognitoAuthorizer
+        AddDefaultAuthorizerToCorsPreflight: false
+        Authorizers:
+          CognitoAuthorizer:
+            UserPoolArn: !Ref UserPoolArn
+        ResourcePolicy:
+          IpRangeWhitelist: !Ref AllowedIpAddresses
+      Cors:
+        AllowHeaders: "'Content-Type,Authorization'"
+        AllowOrigin: "'*'"
+        AllowMethods: "'GET,POST,PUT,DELETE,OPTIONS'"
+      GatewayResponses:
+        UNAUTHORIZED:
+          StatusCode: 401
+          ResponseParameters:
+            Headers:
+              Access-Control-Allow-Origin: "'*'"
+              Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+        ACCESS_DENIED:
+          StatusCode: 403
+          ResponseParameters:
+            Headers:
+              Access-Control-Allow-Origin: "'*'"
+              Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+        DEFAULT_4XX:
+          ResponseParameters:
+            Headers:
+              Access-Control-Allow-Origin: "'*'"
+              Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+        DEFAULT_5XX:
+          ResponseParameters:
+            Headers:
+              Access-Control-Allow-Origin: "'*'"
+              Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+      Tags:
+        Project: !Ref ProjectName
+        Name: Api
+
+  ApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub '${StackName}-api'
+      Handler: app.handler
+      CodeUri: ../../functions/api/
+      Runtime: python3.13
+      MemorySize: 256
+      Timeout: 30
+      Layers:
+        - !Ref OsasiPowertoolsPython
+      Role: !GetAtt ApiFunctionRole.Arn
+      Environment:
+        Variables:
+          LOG_LEVEL: !Ref LogLevel
+          STACK_NAME: !Ref StackName
+          SITES_TABLE_NAME: !Ref SitesTableName
+          CHECK_RESULTS_TABLE_NAME: !Ref CheckResultsTableName
+          NOTIFICATIONS_TABLE_NAME: !Ref NotificationsTableName
+          STATUS_CHANGES_TABLE_NAME: !Ref StatusChangesTableName
+          NOTIFICATION_QUEUE_URL: !Ref NotificationQueueUrl
+          CW_LOG_QUEUE_URL: !Ref CloudWatchLogQueueUrl
+          CHECKER_FUNCTION_ARN: !Sub 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${StackName}-checker'
+          SCHEDULER_ROLE_ARN: !GetAtt SchedulerExecutionRole.Arn
+          SCHEDULER_GROUP_NAME: default
+          EMAIL_DOMAIN: !Ref EmailDomain
+          SES_REGION: !Ref SesRegion
+      Events:
+        AnyApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref Api
+            Path: /{proxy+}
+            Method: ANY
+      Tags:
+        Project: !Ref ProjectName
+        Name: ApiFunction
+
+  ApiFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/lambda/${ApiFunction}'
+      RetentionInDays: 365
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Name
+          Value: ApiFunctionLogGroup
+
+  ApiFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${StackName}-api-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DynamoDBAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:Query
+                  - dynamodb:Scan
+                Resource:
+                  - !Ref SitesTableArn
+                  - !Ref CheckResultsTableArn
+                  - !Ref NotificationsTableArn
+                  - !Ref StatusChangesTableArn
+        - PolicyName: SchedulerAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - scheduler:CreateSchedule
+                  - scheduler:UpdateSchedule
+                  - scheduler:DeleteSchedule
+                  - scheduler:GetSchedule
+                Resource: !Sub 'arn:aws:scheduler:${AWS::Region}:${AWS::AccountId}:schedule/default/${StackName}-site-*'
+        - PolicyName: PassSchedulerRole
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: iam:PassRole
+                Resource: !GetAtt SchedulerExecutionRole.Arn
+        - PolicyName: SQSSendMessage
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: sqs:SendMessage
+                Resource:
+                  - !Ref NotificationQueueArn
+                  - !Ref CloudWatchLogQueueArn
+        - PolicyName: InvokeCheckerLambda
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: lambda:InvokeFunction
+                Resource: !Sub 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${StackName}-checker'
+        - PolicyName: SESSendEmail
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ses:SendEmail
+                  - ses:SendRawEmail
+                Resource: '*'
+                Condition:
+                  StringEquals:
+                    ses:FromAddress: !Sub 'noreply@${EmailDomain}'
+        - PolicyName: SSMGetParameter
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: ssm:GetParameter
+                Resource: !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/web-alive/*'
+        - PolicyName: CloudWatchLogsDescribe
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: logs:DescribeLogGroups
+                Resource: '*'
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Name
+          Value: ApiFunctionRole
+
+  SchedulerExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${StackName}-scheduler-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: scheduler.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: InvokeLambda
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: lambda:InvokeFunction
+                Resource: !Sub 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${StackName}-*'
+        - PolicyName: SendSQSMessage
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: sqs:SendMessage
+                Resource: !Ref CloudWatchLogQueueArn
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Name
+          Value: SchedulerExecutionRole
+
+Outputs:
+  ApiUrl:
+    Value: !Sub 'https://${Api}.execute-api.${AWS::Region}.amazonaws.com/Prod'
+  ApiFunctionArn:
+    Value: !GetAtt ApiFunction.Arn
+  SchedulerExecutionRoleArn:
+    Value: !GetAtt SchedulerExecutionRole.Arn

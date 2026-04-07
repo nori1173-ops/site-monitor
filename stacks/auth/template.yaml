@@ -1,0 +1,54 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Web Alive Monitoring - Cognito User Pool
+
+Parameters:
+  StackName:
+    Type: String
+  ProjectName:
+    Type: String
+  PreSignUpFunctionArn:
+    Type: String
+
+Resources:
+  UserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: !Sub '${StackName}-user-pool'
+      AdminCreateUserConfig:
+        AllowAdminCreateUserOnly: false
+      AutoVerifiedAttributes:
+        - email
+      UsernameAttributes:
+        - email
+      MfaConfiguration: OPTIONAL
+      EnabledMfas:
+        - SOFTWARE_TOKEN_MFA
+      Schema:
+        - Name: email
+          Required: true
+          Mutable: true
+      LambdaConfig:
+        PreSignUp: !Ref PreSignUpFunctionArn
+      UserPoolTags:
+        Project: !Ref ProjectName
+        Name: UserPool
+
+  UserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      ClientName: !Sub '${StackName}-client'
+      UserPoolId: !Ref UserPool
+      GenerateSecret: false
+      ExplicitAuthFlows:
+        - ALLOW_USER_SRP_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+      PreventUserExistenceErrors: ENABLED
+
+Outputs:
+  UserPoolId:
+    Value: !Ref UserPool
+  UserPoolArn:
+    Value: !GetAtt UserPool.Arn
+  UserPoolClientId:
+    Value: !Ref UserPoolClient

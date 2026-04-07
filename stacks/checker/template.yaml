@@ -1,0 +1,112 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Web Alive Monitoring - URL Checker Lambda
+
+Parameters:
+  StackName:
+    Type: String
+  ProjectName:
+    Type: String
+  OsasiPowertoolsPython:
+    Type: String
+  LogLevel:
+    Type: String
+  SitesTableName:
+    Type: String
+  SitesTableArn:
+    Type: String
+  CheckResultsTableName:
+    Type: String
+  CheckResultsTableArn:
+    Type: String
+  StatusChangesTableName:
+    Type: String
+  StatusChangesTableArn:
+    Type: String
+  NotificationQueueUrl:
+    Type: String
+  NotificationQueueArn:
+    Type: String
+
+Resources:
+  CheckerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub '${StackName}-checker'
+      Handler: app.handler
+      CodeUri: ../../functions/checker/
+      Runtime: python3.13
+      MemorySize: 128
+      Timeout: 30
+      Layers:
+        - !Ref OsasiPowertoolsPython
+      Role: !GetAtt CheckerFunctionRole.Arn
+      Environment:
+        Variables:
+          LOG_LEVEL: !Ref LogLevel
+          STACK_NAME: !Ref StackName
+          SITES_TABLE_NAME: !Ref SitesTableName
+          CHECK_RESULTS_TABLE_NAME: !Ref CheckResultsTableName
+          STATUS_CHANGES_TABLE_NAME: !Ref StatusChangesTableName
+          NOTIFICATION_QUEUE_URL: !Ref NotificationQueueUrl
+      Tags:
+        Project: !Ref ProjectName
+        Name: CheckerFunction
+
+  CheckerFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/lambda/${CheckerFunction}'
+      RetentionInDays: 365
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Name
+          Value: CheckerFunctionLogGroup
+
+  CheckerFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${StackName}-checker-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DynamoDBAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:Query
+                Resource:
+                  - !Ref SitesTableArn
+                  - !Ref CheckResultsTableArn
+                  - !Ref StatusChangesTableArn
+        - PolicyName: SQSSendMessage
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: sqs:SendMessage
+                Resource: !Ref NotificationQueueArn
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Name
+          Value: CheckerFunctionRole
+
+Outputs:
+  CheckerFunctionArn:
+    Value: !GetAtt CheckerFunction.Arn
+  CheckerFunctionName:
+    Value: !Ref CheckerFunction

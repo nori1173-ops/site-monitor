@@ -1,0 +1,65 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Web Alive Monitoring - SQS Queues
+
+Parameters:
+  StackName:
+    Type: String
+  ProjectName:
+    Type: String
+
+Resources:
+  DeadLetterQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub '${StackName}-dlq'
+      MessageRetentionPeriod: 1209600
+      SqsManagedSseEnabled: true
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Name
+          Value: DeadLetterQueue
+
+  CloudWatchLogQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub '${StackName}-cw-log-queue'
+      VisibilityTimeout: 300
+      SqsManagedSseEnabled: true
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt DeadLetterQueue.Arn
+        maxReceiveCount: 3
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Name
+          Value: CloudWatchLogQueue
+
+  NotificationQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub '${StackName}-notification-queue'
+      VisibilityTimeout: 60
+      SqsManagedSseEnabled: true
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt DeadLetterQueue.Arn
+        maxReceiveCount: 3
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Name
+          Value: NotificationQueue
+
+Outputs:
+  CloudWatchLogQueueUrl:
+    Value: !Ref CloudWatchLogQueue
+  CloudWatchLogQueueArn:
+    Value: !GetAtt CloudWatchLogQueue.Arn
+  NotificationQueueUrl:
+    Value: !Ref NotificationQueue
+  NotificationQueueArn:
+    Value: !GetAtt NotificationQueue.Arn
+  DeadLetterQueueUrl:
+    Value: !Ref DeadLetterQueue
+  DeadLetterQueueArn:
+    Value: !GetAtt DeadLetterQueue.Arn

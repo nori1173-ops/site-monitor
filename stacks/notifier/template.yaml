@@ -1,0 +1,137 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Web Alive Monitoring - Notifier Lambda
+
+Parameters:
+  StackName:
+    Type: String
+  ProjectName:
+    Type: String
+  OsasiPowertoolsPython:
+    Type: String
+  LogLevel:
+    Type: String
+  SitesTableName:
+    Type: String
+  SitesTableArn:
+    Type: String
+  NotificationsTableName:
+    Type: String
+  NotificationsTableArn:
+    Type: String
+  NotificationQueueArn:
+    Type: String
+  EmailDomain:
+    Type: String
+    Default: alive.osasi-cloud.com
+  SesRegion:
+    Type: String
+    Default: us-west-2
+
+Resources:
+  NotifierFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub '${StackName}-notifier'
+      Handler: app.handler
+      CodeUri: ../../functions/notifier/
+      Runtime: python3.13
+      MemorySize: 128
+      Timeout: 60
+      Layers:
+        - !Ref OsasiPowertoolsPython
+      Role: !GetAtt NotifierFunctionRole.Arn
+      Environment:
+        Variables:
+          LOG_LEVEL: !Ref LogLevel
+          STACK_NAME: !Ref StackName
+          SITES_TABLE_NAME: !Ref SitesTableName
+          NOTIFICATIONS_TABLE_NAME: !Ref NotificationsTableName
+          EMAIL_DOMAIN: !Ref EmailDomain
+          SES_REGION: !Ref SesRegion
+      Events:
+        NotificationQueue:
+          Type: SQS
+          Properties:
+            Queue: !Ref NotificationQueueArn
+            BatchSize: 1
+      Tags:
+        Project: !Ref ProjectName
+        Name: NotifierFunction
+
+  NotifierFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/lambda/${NotifierFunction}'
+      RetentionInDays: 365
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Name
+          Value: NotifierFunctionLogGroup
+
+  NotifierFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${StackName}-notifier-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DynamoDBRead
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:Query
+                Resource:
+                  - !Ref SitesTableArn
+                  - !Ref NotificationsTableArn
+        - PolicyName: SESSendEmail
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ses:SendEmail
+                  - ses:SendRawEmail
+                Resource: '*'
+                Condition:
+                  StringEquals:
+                    ses:FromAddress: !Sub 'noreply@${EmailDomain}'
+        - PolicyName: SSMGetParameter
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: ssm:GetParameter
+                Resource: !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/web-alive/*'
+        - PolicyName: SQSReceive
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sqs:ReceiveMessage
+                  - sqs:DeleteMessage
+                  - sqs:GetQueueAttributes
+                Resource: !Ref NotificationQueueArn
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Name
+          Value: NotifierFunctionRole
+
+Outputs:
+  NotifierFunctionArn:
+    Value: !GetAtt NotifierFunction.Arn
+  NotifierFunctionName:
+    Value: !Ref NotifierFunction

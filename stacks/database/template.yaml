@@ -1,0 +1,125 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Web Alive Monitoring - DynamoDB Tables
+
+Parameters:
+  StackName:
+    Type: String
+  ProjectName:
+    Type: String
+
+Resources:
+  SitesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub '${StackName}-sites'
+      BillingMode: PAY_PER_REQUEST
+      KeySchema:
+        - AttributeName: site_id
+          KeyType: HASH
+      AttributeDefinitions:
+        - AttributeName: site_id
+          AttributeType: S
+      SSESpecification:
+        SSEEnabled: true
+        SSEType: KMS
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Name
+          Value: SitesTable
+
+  CheckResultsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub '${StackName}-check_results'
+      BillingMode: PAY_PER_REQUEST
+      KeySchema:
+        - AttributeName: site_id
+          KeyType: HASH
+        - AttributeName: 'checked_at#target_url'
+          KeyType: RANGE
+      AttributeDefinitions:
+        - AttributeName: site_id
+          AttributeType: S
+        - AttributeName: 'checked_at#target_url'
+          AttributeType: S
+      TimeToLiveSpecification:
+        Enabled: true
+        AttributeName: ttl
+      SSESpecification:
+        SSEEnabled: true
+        SSEType: KMS
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Name
+          Value: CheckResultsTable
+
+  NotificationsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub '${StackName}-notifications'
+      BillingMode: PAY_PER_REQUEST
+      KeySchema:
+        - AttributeName: site_id
+          KeyType: HASH
+        - AttributeName: notification_id
+          KeyType: RANGE
+      AttributeDefinitions:
+        - AttributeName: site_id
+          AttributeType: S
+        - AttributeName: notification_id
+          AttributeType: S
+      SSESpecification:
+        SSEEnabled: true
+        SSEType: KMS
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Name
+          Value: NotificationsTable
+
+  StatusChangesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub '${StackName}-status_changes'
+      BillingMode: PAY_PER_REQUEST
+      KeySchema:
+        - AttributeName: site_id
+          KeyType: HASH
+        - AttributeName: changed_at
+          KeyType: RANGE
+      AttributeDefinitions:
+        - AttributeName: site_id
+          AttributeType: S
+        - AttributeName: changed_at
+          AttributeType: S
+      TimeToLiveSpecification:
+        Enabled: true
+        AttributeName: ttl
+      SSESpecification:
+        SSEEnabled: true
+        SSEType: KMS
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Name
+          Value: StatusChangesTable
+
+Outputs:
+  SitesTableName:
+    Value: !Ref SitesTable
+  SitesTableArn:
+    Value: !GetAtt SitesTable.Arn
+  CheckResultsTableName:
+    Value: !Ref CheckResultsTable
+  CheckResultsTableArn:
+    Value: !GetAtt CheckResultsTable.Arn
+  NotificationsTableName:
+    Value: !Ref NotificationsTable
+  NotificationsTableArn:
+    Value: !GetAtt NotificationsTable.Arn
+  StatusChangesTableName:
+    Value: !Ref StatusChangesTable
+  StatusChangesTableArn:
+    Value: !GetAtt StatusChangesTable.Arn
