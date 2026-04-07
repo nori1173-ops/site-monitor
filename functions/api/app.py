@@ -33,10 +33,16 @@ except ImportError:
 
 from botocore.exceptions import ClientError
 
-from api.utils.auth import get_email_from_claims
-from api.utils.response import error_response, success_response
-from api.utils.validator import validate_notification_body, validate_site_body
-from api.utils import scheduler as sched_util
+try:
+    from helpers.auth import get_email_from_claims
+    from helpers.response import error_response, success_response
+    from helpers.validator import validate_notification_body, validate_site_body
+    from helpers import scheduler as sched_util
+except ImportError:
+    from api.helpers.auth import get_email_from_claims
+    from api.helpers.response import error_response, success_response
+    from api.helpers.validator import validate_notification_body, validate_site_body
+    from api.helpers import scheduler as sched_util
 
 
 SITES_TABLE = os.environ.get("SITES_TABLE_NAME", "")

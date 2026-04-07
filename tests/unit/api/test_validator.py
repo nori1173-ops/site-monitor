@@ -2,7 +2,7 @@
 
 import pytest
 
-from api.utils.validator import validate_notification_body, validate_site_body
+from api.helpers.validator import validate_notification_body, validate_site_body
 
 
 class TestValidateSiteBody:

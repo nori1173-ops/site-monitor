@@ -1,5 +1,5 @@
 import pytest
-from api.utils.cron import generate_cron_expression
+from api.helpers.cron import generate_cron_expression
 
 
 class TestGenerateCronExpression:

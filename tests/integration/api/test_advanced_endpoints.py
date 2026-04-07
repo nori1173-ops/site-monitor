@@ -20,7 +20,7 @@ class TestOptionsEndpoint:
     def setup(self, dynamodb_tables):
         self.dynamodb = dynamodb_tables
         self.scheduler_patcher = patch(
-            "api.utils.scheduler.get_scheduler_client",
+            "api.helpers.scheduler.get_scheduler_client",
             return_value=MagicMock(),
         )
         self.scheduler_patcher.start()
@@ -70,7 +70,7 @@ class TestStatusChangesEndpoint:
         self.dynamodb = dynamodb_tables
         self.mock_scheduler = MagicMock()
         self.scheduler_patcher = patch(
-            "api.utils.scheduler.get_scheduler_client",
+            "api.helpers.scheduler.get_scheduler_client",
             return_value=self.mock_scheduler,
         )
         self.scheduler_patcher.start()
@@ -131,7 +131,7 @@ class TestTestCheckEndpoint:
         self.dynamodb = dynamodb_tables
         self.mock_scheduler = MagicMock()
         self.scheduler_patcher = patch(
-            "api.utils.scheduler.get_scheduler_client",
+            "api.helpers.scheduler.get_scheduler_client",
             return_value=self.mock_scheduler,
         )
         self.scheduler_patcher.start()
@@ -236,7 +236,7 @@ class TestTestNotifyEndpoint:
         self.dynamodb = dynamodb_tables
         self.mock_scheduler = MagicMock()
         self.scheduler_patcher = patch(
-            "api.utils.scheduler.get_scheduler_client",
+            "api.helpers.scheduler.get_scheduler_client",
             return_value=self.mock_scheduler,
         )
         self.scheduler_patcher.start()
@@ -410,7 +410,7 @@ class TestCloudWatchLogGroupsEndpoint:
     def setup(self, dynamodb_tables):
         self.dynamodb = dynamodb_tables
         self.scheduler_patcher = patch(
-            "api.utils.scheduler.get_scheduler_client",
+            "api.helpers.scheduler.get_scheduler_client",
             return_value=MagicMock(),
         )
         self.scheduler_patcher.start()
@@ -476,7 +476,7 @@ class TestHandlerEdgeCases:
     def setup(self, dynamodb_tables):
         self.dynamodb = dynamodb_tables
         self.scheduler_patcher = patch(
-            "api.utils.scheduler.get_scheduler_client",
+            "api.helpers.scheduler.get_scheduler_client",
             return_value=MagicMock(),
         )
         self.scheduler_patcher.start()

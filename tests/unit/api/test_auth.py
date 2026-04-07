@@ -1,4 +1,4 @@
-from api.utils.auth import get_email_from_claims
+from api.helpers.auth import get_email_from_claims
 
 
 class TestGetEmailFromClaims:

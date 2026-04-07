@@ -5,7 +5,10 @@ import os
 
 import boto3
 
-from api.utils.cron import generate_cron_expression
+try:
+    from helpers.cron import generate_cron_expression
+except ImportError:
+    from api.helpers.cron import generate_cron_expression
 
 
 def get_scheduler_client():

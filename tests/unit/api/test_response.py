@@ -1,6 +1,6 @@
 import json
 
-from api.utils.response import success_response, error_response
+from api.helpers.response import success_response, error_response
 
 
 class TestSuccessResponse:

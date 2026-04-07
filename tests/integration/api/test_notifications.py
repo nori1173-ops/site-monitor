@@ -14,7 +14,7 @@ class TestNotificationsCRUD:
         self.dynamodb = dynamodb_tables
         self.mock_scheduler = MagicMock()
         self.scheduler_patcher = patch(
-            "api.utils.scheduler.get_scheduler_client",
+            "api.helpers.scheduler.get_scheduler_client",
             return_value=self.mock_scheduler,
         )
         self.scheduler_patcher.start()

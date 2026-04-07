@@ -16,7 +16,7 @@ class TestSchedulerFunctions:
         monkeypatch.setenv("SCHEDULER_GROUP_NAME", "default")
         monkeypatch.setenv("CW_LOG_QUEUE_URL", "https://sqs.ap-northeast-1.amazonaws.com/123456789012/cw-queue")
 
-    @patch("api.utils.scheduler.get_scheduler_client")
+    @patch("api.helpers.scheduler.get_scheduler_client")
     def test_create_schedule_url_check(self, mock_get_client):
         mock_client = MagicMock()
         mock_client.create_schedule.return_value = {
@@ -24,7 +24,7 @@ class TestSchedulerFunctions:
         }
         mock_get_client.return_value = mock_client
 
-        from api.utils.scheduler import create_schedule
+        from api.helpers.scheduler import create_schedule
         arn = create_schedule(
             site_id="abc",
             schedule_start="00:20",
@@ -41,7 +41,7 @@ class TestSchedulerFunctions:
         target = call_kwargs["Target"]
         assert target["Arn"] == "arn:aws:lambda:ap-northeast-1:123456789012:function:checker"
 
-    @patch("api.utils.scheduler.get_scheduler_client")
+    @patch("api.helpers.scheduler.get_scheduler_client")
     def test_create_schedule_cloudwatch_log(self, mock_get_client):
         mock_client = MagicMock()
         mock_client.create_schedule.return_value = {
@@ -49,7 +49,7 @@ class TestSchedulerFunctions:
         }
         mock_get_client.return_value = mock_client
 
-        from api.utils.scheduler import create_schedule
+        from api.helpers.scheduler import create_schedule
         create_schedule(
             site_id="xyz",
             schedule_start="00:50",
@@ -63,12 +63,12 @@ class TestSchedulerFunctions:
         target = call_kwargs["Target"]
         assert "sqs" in target["Arn"]
 
-    @patch("api.utils.scheduler.get_scheduler_client")
+    @patch("api.helpers.scheduler.get_scheduler_client")
     def test_update_schedule_url_check(self, mock_get_client):
         mock_client = MagicMock()
         mock_get_client.return_value = mock_client
 
-        from api.utils.scheduler import update_schedule
+        from api.helpers.scheduler import update_schedule
         update_schedule(
             site_id="abc",
             schedule_start="01:00",
@@ -79,12 +79,12 @@ class TestSchedulerFunctions:
 
         mock_client.update_schedule.assert_called_once()
 
-    @patch("api.utils.scheduler.get_scheduler_client")
+    @patch("api.helpers.scheduler.get_scheduler_client")
     def test_update_schedule_cloudwatch_log(self, mock_get_client):
         mock_client = MagicMock()
         mock_get_client.return_value = mock_client
 
-        from api.utils.scheduler import update_schedule
+        from api.helpers.scheduler import update_schedule
         update_schedule(
             site_id="xyz",
             schedule_start="00:50",
@@ -98,12 +98,12 @@ class TestSchedulerFunctions:
         target = call_kwargs["Target"]
         assert "sqs" in target["Arn"]
 
-    @patch("api.utils.scheduler.get_scheduler_client")
+    @patch("api.helpers.scheduler.get_scheduler_client")
     def test_delete_schedule(self, mock_get_client):
         mock_client = MagicMock()
         mock_get_client.return_value = mock_client
 
-        from api.utils.scheduler import delete_schedule
+        from api.helpers.scheduler import delete_schedule
         delete_schedule("abc")
 
         mock_client.delete_schedule.assert_called_once_with(
@@ -111,7 +111,7 @@ class TestSchedulerFunctions:
             GroupName="default",
         )
 
-    @patch("api.utils.scheduler.get_scheduler_client")
+    @patch("api.helpers.scheduler.get_scheduler_client")
     def test_delete_schedule_not_found(self, mock_get_client):
         mock_client = MagicMock()
         mock_client.delete_schedule.side_effect = mock_client.exceptions.ResourceNotFoundException
@@ -119,10 +119,10 @@ class TestSchedulerFunctions:
         mock_client.delete_schedule.side_effect = mock_client.exceptions.ResourceNotFoundException()
         mock_get_client.return_value = mock_client
 
-        from api.utils.scheduler import delete_schedule
+        from api.helpers.scheduler import delete_schedule
         delete_schedule("nonexistent")
 
-    @patch("api.utils.scheduler.get_scheduler_client")
+    @patch("api.helpers.scheduler.get_scheduler_client")
     def test_disable_schedule(self, mock_get_client):
         mock_client = MagicMock()
         mock_client.get_schedule.return_value = {
@@ -135,14 +135,14 @@ class TestSchedulerFunctions:
         }
         mock_get_client.return_value = mock_client
 
-        from api.utils.scheduler import disable_schedule
+        from api.helpers.scheduler import disable_schedule
         disable_schedule("abc")
 
         mock_client.update_schedule.assert_called_once()
         call_kwargs = mock_client.update_schedule.call_args[1]
         assert call_kwargs["State"] == "DISABLED"
 
-    @patch("api.utils.scheduler.get_scheduler_client")
+    @patch("api.helpers.scheduler.get_scheduler_client")
     def test_enable_schedule(self, mock_get_client):
         mock_client = MagicMock()
         mock_client.get_schedule.return_value = {
@@ -155,7 +155,7 @@ class TestSchedulerFunctions:
         }
         mock_get_client.return_value = mock_client
 
-        from api.utils.scheduler import enable_schedule
+        from api.helpers.scheduler import enable_schedule
         enable_schedule("abc")
 
         mock_client.update_schedule.assert_called_once()
