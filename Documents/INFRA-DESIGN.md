@@ -46,6 +46,7 @@ stacks/ses/template.yaml （独立デプロイ、us-west-2）         │
 | OsasiPowertoolsPython | String | arn:aws:lambda:...:79 | 同左 | 社内Lambdaレイヤー ARN |
 | LogLevel | String | DEBUG | INFO | Lambdaログレベル |
 | SubDomain | String | web-alive-dev | web-alive | CloudFrontサブドメイン |
+| AdminCredentials | String | admin:osasi034 | 同左 | 管理者認証情報（user:password形式） |
 | AllowedIpAddresses | CommaDelimitedList | 210.225.75.184 | 同左 | IP制限 |
 | HostedZoneId | String | Z2TVUBVNI4RE7N | 同左 | Route 53 ホストゾーンID |
 | AcmCertificateArn | String | arn:aws:acm:us-east-1:... | 同左 | SSL証明書 ARN |
@@ -90,6 +91,7 @@ stacks/ses/template.yaml （独立デプロイ、us-west-2）         │
 | ユーザー名属性 | email |
 | 自動検証 | email |
 | MFA | OPTIONAL（SOFTWARE_TOKEN_MFA） |
+| パスワードポリシー | 最低8文字、英大小文字+数字必須、記号不要 |
 | Pre Sign-up トリガー | CognitoPreSignUpFunction（`@osasi.co.jp`ドメイン制限） |
 
 ### User Pool Client 設定
@@ -175,6 +177,8 @@ stacks/ses/template.yaml （独立デプロイ、us-west-2）         │
 | NOTIFICATION_QUEUE_URL | QueueStack出力 |
 | EMAIL_DOMAIN | alive.osasi-cloud.com |
 | SES_REGION | us-west-2 |
+| ADMIN_CREDENTIALS | メインスタック パラメータ（AdminCredentials） |
+| USER_POOL_ID | AuthStack出力 |
 
 ### IAMポリシー
 
@@ -186,6 +190,7 @@ stacks/ses/template.yaml （独立デプロイ、us-west-2）         │
 | lambda:InvokeFunction | CheckerFunction, CwCheckerFunction |
 | sqs:SendMessage | NotificationQueue, CloudWatchLogQueue |
 | logs:DescribeLogGroups | * |
+| cognito-idp:ListUsers, AdminEnableUser, AdminDisableUser, AdminResetUserPassword, AdminDeleteUser, AdminGetUser | Cognito User Pool |
 
 ### API Gateway 設定
 

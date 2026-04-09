@@ -45,6 +45,11 @@ Parameters:
   SesRegion:
     Type: String
     Default: us-west-2
+  UserPoolId:
+    Type: String
+  AdminCredentials:
+    Type: String
+    Default: admin:osasi034
 
 Resources:
   Api:
@@ -117,6 +122,8 @@ Resources:
           SCHEDULER_GROUP_NAME: default
           EMAIL_DOMAIN: !Ref EmailDomain
           SES_REGION: !Ref SesRegion
+          USER_POOL_ID: !Ref UserPoolId
+          ADMIN_CREDENTIALS: !Ref AdminCredentials
       Events:
         AnyApi:
           Type: Api
@@ -223,6 +230,19 @@ Resources:
               - Effect: Allow
                 Action: ssm:GetParameter
                 Resource: !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/web-alive/*'
+        - PolicyName: CognitoUserManagement
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - cognito-idp:ListUsers
+                  - cognito-idp:AdminDeleteUser
+                  - cognito-idp:AdminEnableUser
+                  - cognito-idp:AdminDisableUser
+                  - cognito-idp:AdminGetUser
+                  - cognito-idp:AdminResetUserPassword
+                Resource: !Sub 'arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${UserPoolId}'
         - PolicyName: CloudWatchLogsDescribe
           PolicyDocument:
             Version: '2012-10-17'

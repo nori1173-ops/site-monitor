@@ -25,6 +25,7 @@ Web死活監視システムの管理画面。Vue 3 + Vuetify 4 + Vite + Pinia + 
 /sites/:id      → サイト登録・編集画面（認証必須）
 /sites/:id/notifications → 通知設定画面（認証必須）
 /sites/:id/history       → チェック履歴画面（認証必須）
+/admin/users    → 管理者ユーザー管理画面（認証必須 + 管理者認証）
 ```
 
 ### ルーティングガード
@@ -32,6 +33,7 @@ Web死活監視システムの管理画面。Vue 3 + Vuetify 4 + Vite + Pinia + 
 - `meta.requiresAuth: true` のルートは認証済みでなければ `/login` にリダイレクト
 - ログイン済みで `/login` / `/signup` にアクセスした場合は `/` にリダイレクト
 - `router.beforeEach` で `useAuthStore().checkAuth()` を呼び出して認証状態を確認
+- `/admin/users` はルーターガードで認証必須 + ページ表示時に管理者認証ダイアログを表示
 
 ## コンポーネント構成
 
@@ -45,6 +47,7 @@ Web死活監視システムの管理画面。Vue 3 + Vuetify 4 + Vite + Pinia + 
 | SiteEditView.vue | /sites/:id | 監視設定のCRUD |
 | NotificationView.vue | /sites/:id/notifications | 通知設定の管理 |
 | HistoryView.vue | /sites/:id/history | チェック結果 + 状態変化履歴 |
+| AdminUsersView.vue | /admin/users | ユーザー管理（管理者用） |
 
 ### レイアウトコンポーネント（components/）
 
@@ -76,6 +79,9 @@ const error = ref<string | null>(null)
 | login(email, password) | サインイン（signIn） |
 | signup(email, password) | サインアップ（signUp） |
 | confirmSignup(email, code) | 確認コード検証（confirmSignUp） |
+| resetPassword(email) | パスワードリセット開始（resetPassword） |
+| confirmResetPassword(email, code, newPassword) | パスワードリセット確認（confirmResetPassword） |
+| deleteAccount() | 自ユーザー削除（DELETE /users/me） |
 | logout() | サインアウト（signOut） |
 
 ### sites ストア (`stores/sites.ts`)
@@ -156,6 +162,15 @@ Amplify.configure({
 
 ## 画面詳細
 
+### ログイン画面（/login）
+
+- メールアドレス・パスワード入力フォーム
+- 「パスワードをお忘れですか？」リンクからパスワードリセットフローへ遷移
+- パスワードリセットフロー:
+  1. メールアドレス入力 → 確認コード送信
+  2. 確認コード + 新パスワード入力 → パスワード更新
+  3. ログイン画面に戻る
+
 ### ダッシュボード（/）
 
 - サマリーカード: 監視数・正常・欠測・無効の4つ
@@ -185,6 +200,17 @@ Amplify.configure({
 
 - チェック結果の時系列一覧
 - 状態変化履歴（正常⇔異常の遷移タイミングと原因URLを時系列表示）
+
+### 管理者ユーザー管理画面（/admin/users）
+
+- 画面アクセス時にベーシック認証ダイアログを表示（ユーザー名・パスワード入力）
+- 認証成功後、Cognito User Poolの全ユーザー一覧を表示
+- 各ユーザーの表示項目: メールアドレス、ステータス、有効/無効、作成日時、登録サイト数
+- 操作ボタン:
+  - 有効/無効トグル: ユーザーアカウントの有効化/無効化
+  - パスワードリセット: 確認コード付きメールを送信
+  - ユーザー削除: サイト登録がない場合のみ削除可能
+- 管理者認証情報は `X-Admin-Auth` ヘッダーとしてAPIリクエストに付与
 
 ## ビルド・デプロイ
 

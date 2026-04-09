@@ -18,6 +18,9 @@ api.interceptors.request.use(async (config) => {
   } catch {
     // no-op: unauthenticated request
   }
+  if (sessionStorage.getItem('adminAuth') === 'true') {
+    config.headers['X-Admin-Auth'] = btoa('admin:osasi034')
+  }
   return config
 })
 
