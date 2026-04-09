@@ -29,8 +29,12 @@ except ImportError:
     else:
         LambdaLogger = type(logger)
 
-from checker.http_client import fetch_url
-from checker.checker import determine_update_status
+try:
+    from http_client import fetch_url
+    from checker import determine_update_status
+except ImportError:
+    from checker.http_client import fetch_url
+    from checker.checker import determine_update_status
 
 SITES_TABLE = os.environ.get("SITES_TABLE_NAME", "")
 CHECK_RESULTS_TABLE = os.environ.get("CHECK_RESULTS_TABLE_NAME", "")

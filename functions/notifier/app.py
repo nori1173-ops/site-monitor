@@ -32,8 +32,12 @@ except ImportError:
     else:
         LambdaLogger = type(logger)
 
-from notifier.email_sender import send_email
-from notifier.slack_sender import send_slack
+try:
+    from email_sender import send_email
+    from slack_sender import send_slack
+except ImportError:
+    from notifier.email_sender import send_email
+    from notifier.slack_sender import send_slack
 
 
 SITES_TABLE = os.environ.get("SITES_TABLE_NAME", "")
