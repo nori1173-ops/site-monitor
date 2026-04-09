@@ -1,7 +1,7 @@
 <template>
   <v-app>
     <v-app-bar color="primary" density="comfortable" elevation="2">
-      <v-app-bar-title class="font-weight-bold">
+      <v-app-bar-title class="font-weight-bold" style="cursor: pointer" @click="$router.push('/')">
         <v-icon icon="mdi-pulse" class="mr-2" />
         Web Alive Monitoring
       </v-app-bar-title>

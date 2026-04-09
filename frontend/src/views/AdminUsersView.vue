@@ -1,6 +1,11 @@
 <template>
   <AppLayout>
     <v-container class="py-6" fluid>
+      <router-link to="/" class="text-body-2 text-primary text-decoration-none d-inline-flex align-center mb-3">
+        <v-icon icon="mdi-arrow-left" size="16" class="mr-1" />
+        ダッシュボードに戻る
+      </router-link>
+
       <div class="d-flex align-center mb-6">
         <v-icon icon="mdi-shield-crown-outline" color="primary" size="28" class="mr-3" />
         <h1 class="text-h5 font-weight-bold">ユーザー管理</h1>
