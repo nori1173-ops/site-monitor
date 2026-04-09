@@ -4,7 +4,7 @@
       <v-card class="pa-8 auth-card" width="420" elevation="0">
         <div class="text-center mb-6">
           <v-icon icon="mdi-pulse" color="primary" size="48" class="mb-2" />
-          <h1 class="text-h5 font-weight-bold text-primary">Web Alive Monitoring</h1>
+          <h1 class="text-h5 font-weight-bold text-primary">Site Monitor</h1>
           <p class="text-body-2 text-medium-emphasis mt-1">アカウント登録</p>
         </div>
 
@@ -27,7 +27,7 @@
               type="email"
               prepend-inner-icon="mdi-email-outline"
               :rules="emailRules"
-              hint="@osasi.co.jp ドメインのみ"
+              hint="@example.com ドメインのみ"
               persistent-hint
               class="mb-2"
             />
@@ -119,7 +119,7 @@ const formRef = ref()
 const emailRules = [
   (v: string) => !!v || 'メールアドレスを入力してください',
   (v: string) => /.+@.+\..+/.test(v) || '有効なメールアドレスを入力してください',
-  (v: string) => v.endsWith('@osasi.co.jp') || '@osasi.co.jp ドメインのみ登録可能です',
+  (v: string) => v.endsWith('@example.com') || '@example.com ドメインのみ登録可能です',
 ]
 
 const passwordRules = [

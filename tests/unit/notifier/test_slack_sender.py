@@ -20,7 +20,7 @@ class TestSendSlack:
             from notifier.slack_sender import send_slack
 
             send_slack(
-                ssm_parameter_name="/web-alive/slack-webhook-url",
+                ssm_parameter_name="/site-monitor/slack-webhook-url",
                 mention="<!channel>",
                 site_name="テストダム",
                 trigger_url="https://example.com/data.png",
@@ -30,7 +30,7 @@ class TestSendSlack:
             )
 
         mock_ssm.get_parameter.assert_called_once_with(
-            Name="/web-alive/slack-webhook-url",
+            Name="/site-monitor/slack-webhook-url",
             WithDecryption=True,
         )
         mock_post.assert_called_once()
@@ -55,7 +55,7 @@ class TestSendSlack:
             from notifier.slack_sender import send_slack
 
             send_slack(
-                ssm_parameter_name="/web-alive/slack-webhook-url",
+                ssm_parameter_name="/site-monitor/slack-webhook-url",
                 mention="<@U12345>",
                 site_name="テスト橋梁",
                 trigger_url="https://example.com",
@@ -84,7 +84,7 @@ class TestSendSlack:
             from notifier.slack_sender import send_slack
 
             send_slack(
-                ssm_parameter_name="/web-alive/slack-webhook-url",
+                ssm_parameter_name="/site-monitor/slack-webhook-url",
                 mention="",
                 site_name="テスト",
                 trigger_url="https://example.com",
@@ -112,7 +112,7 @@ class TestSendSlack:
 
             with pytest.raises(Exception, match="HTTP 500"):
                 send_slack(
-                    ssm_parameter_name="/web-alive/slack-webhook-url",
+                    ssm_parameter_name="/site-monitor/slack-webhook-url",
                     mention="",
                     site_name="テスト",
                     trigger_url="https://example.com",

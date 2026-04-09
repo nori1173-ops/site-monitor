@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Web Alive Monitoring - DynamoDB Tables
+Description: Site Monitor - DynamoDB Tables
 
 Parameters:
   StackName:

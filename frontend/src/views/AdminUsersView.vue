@@ -121,7 +121,7 @@ const headers = [
 ]
 
 function getAdminAuthHeader(): Record<string, string> {
-  const creds = btoa('admin:osasi034')
+  const creds = btoa('admin:SecurePassword123')
   return { 'X-Admin-Auth': creds }
 }
 

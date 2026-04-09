@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: Web Alive Monitoring - S3 + CloudFront + Route 53
+Description: Site Monitor - S3 + CloudFront + Route 53
 
 Parameters:
   StackName:
@@ -9,7 +9,7 @@ Parameters:
     Type: String
   BaseDomainName:
     Type: String
-    Default: osasi-cloud.com
+    Default: example-cloud.com
   SubDomain:
     Type: String
   HostedZoneId:
@@ -69,7 +69,7 @@ Resources:
         DefaultRootObject: index.html
         HttpVersion: http2and3
         PriceClass: PriceClass_200
-        Comment: !Sub '${StackName} - Web Alive Monitoring'
+        Comment: !Sub '${StackName} - Site Monitor'
         Aliases:
           - !Sub '${SubDomain}.${BaseDomainName}'
         ViewerCertificate:
@@ -108,7 +108,7 @@ Resources:
       Name: !Sub '${StackName}-ip-restrict'
       AutoPublish: true
       FunctionConfig:
-        Comment: IP restriction for Web Alive Monitoring
+        Comment: IP restriction for Site Monitor
         Runtime: cloudfront-js-2.0
       FunctionCode: !Sub
         - |

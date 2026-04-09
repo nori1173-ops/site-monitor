@@ -104,7 +104,7 @@ def make_api_event(
     body: dict | None = None,
     path_parameters: dict | None = None,
     query_parameters: dict | None = None,
-    email: str = "user@osasi.co.jp",
+    email: str = "user@example.com",
 ) -> dict:
     """API Gateway proxy event を構築"""
     event = {

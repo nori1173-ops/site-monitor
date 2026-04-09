@@ -8,7 +8,7 @@ import pytest
 
 @pytest.fixture(autouse=True)
 def env_vars(monkeypatch):
-    monkeypatch.setenv("EMAIL_DOMAIN", "alive.osasi-cloud.com")
+    monkeypatch.setenv("EMAIL_DOMAIN", "alive.example-cloud.com")
     monkeypatch.setenv("SES_REGION", "us-west-2")
 
 
@@ -31,7 +31,7 @@ class TestSendEmail:
         mock_ses.send_email.assert_called_once()
         call_kwargs = mock_ses.send_email.call_args[1]
 
-        assert call_kwargs["Source"] == "OSASI.NET<noreply@alive.osasi-cloud.com>"
+        assert call_kwargs["Source"] == "Example.NET<noreply@alive.example-cloud.com>"
         assert call_kwargs["Destination"] == {"ToAddresses": ["user@example.com"]}
         assert "[Web Alive] テストダム - 状態変化通知" in call_kwargs["Message"]["Subject"]["Data"]
 
@@ -114,7 +114,7 @@ class TestSendEmail:
             )
 
         call_kwargs = mock_ses.send_email.call_args[1]
-        assert "alive.osasi-cloud.com" in call_kwargs["Source"]
+        assert "alive.example-cloud.com" in call_kwargs["Source"]
 
     def test_ses_region_from_env(self):
         with patch("boto3.client") as mock_boto3_client:

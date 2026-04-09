@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Web Alive Monitoring - SQS Queues
+Description: Site Monitor - SQS Queues
 
 Parameters:
   StackName:

@@ -11,7 +11,7 @@ except ImportError:
 
 TIMEOUT_SECONDS = 10
 MAX_RESPONSE_SIZE = 10 * 1024 * 1024
-USER_AGENT = "WebAliveMonitoring/1.0"
+USER_AGENT = "SiteMonitor/1.0"
 
 
 class ResponseTooLargeError(Exception):

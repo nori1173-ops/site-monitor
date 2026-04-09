@@ -35,7 +35,7 @@ class TestRunInsightsQuery:
         result = run_query(
             log_group="TestLogGroup",
             message_filter="リクエストを送信します。",
-            json_search_word='"account": "10206721"',
+            json_search_word='"account": "99999999"',
             search_period_minutes=60,
         )
 
@@ -164,7 +164,7 @@ class TestRunInsightsQuery:
         run_query(
             log_group="/aws/lambda/MyFunction",
             message_filter="リクエストを送信します。",
-            json_search_word='"account": "10206721","note": "LONG"',
+            json_search_word='"account": "99999999","note": "LONG"',
             search_period_minutes=60,
         )
 
@@ -173,7 +173,7 @@ class TestRunInsightsQuery:
 
         assert "filter @message like" in query_string
         assert "リクエストを送信します。" in query_string
-        assert '"account": "10206721","note": "LONG"' in query_string
+        assert '"account": "99999999","note": "LONG"' in query_string
 
     @patch("cw_checker.insights.boto3")
     def test_query_exception_returns_error(self, mock_boto3):

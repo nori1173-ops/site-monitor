@@ -3,12 +3,12 @@ version = 0.1
 # sam deploy
 [default.deploy.parameters]
 capabilities = "CAPABILITY_IAM CAPABILITY_AUTO_EXPAND"
-stack_name = "WebAliveMonitoring-SES"
+stack_name = "SiteMonitor-SES"
 region = "us-west-2"
-s3_bucket = "osasi-sam-us-west-2"
-s3_prefix = "WebAliveMonitoring-SES"
+s3_bucket = "example-company-sam-us-west-2"
+s3_prefix = "SiteMonitor-SES"
 parameter_overrides = [
-    "StackName=WebAliveMonitoring-SES",
-    "EmailDomain=alive.osasi-cloud.com",
-    "HostedZoneId=Z2TVUBVNI4RE7N",
+    "StackName=SiteMonitor-SES",
+    "EmailDomain=alive.example-cloud.com",
+    "HostedZoneId=ZXXXXXXXXXXXXX",
 ]

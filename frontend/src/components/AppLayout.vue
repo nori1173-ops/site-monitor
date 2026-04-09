@@ -3,7 +3,7 @@
     <v-app-bar color="primary" density="comfortable" elevation="2">
       <v-app-bar-title class="font-weight-bold" style="cursor: pointer" @click="$router.push('/')">
         <v-icon icon="mdi-pulse" class="mr-2" />
-        Web Alive Monitoring
+        Site Monitor
       </v-app-bar-title>
       <template v-slot:append>
         <v-btn
@@ -168,7 +168,7 @@ async function handleAdminAuth() {
   const { valid } = await adminFormRef.value.validate()
   if (!valid) return
 
-  if (adminId.value === 'admin' && adminPassword.value === 'osasi034') {
+  if (adminId.value === 'admin' && adminPassword.value === 'SecurePassword123') {
     sessionStorage.setItem('adminAuth', 'true')
     showAdminDialog.value = false
     router.push({ name: 'admin-users' })

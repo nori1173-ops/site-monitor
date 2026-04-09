@@ -15,19 +15,19 @@ class TestCognitoPreSignupTrigger:
             "response": {},
         }
 
-    def test_osasi_domain_allowed(self):
-        event = self._make_event("user@osasi.co.jp")
+    def test_example-company_domain_allowed(self):
+        event = self._make_event("user@example.com")
         result = handler(event, None)
         assert result == event
 
     def test_gmail_rejected(self):
         event = self._make_event("user@gmail.com")
-        with pytest.raises(Exception, match="osasi.co.jp"):
+        with pytest.raises(Exception, match="example.com"):
             handler(event, None)
 
     def test_subdomain_rejected(self):
-        event = self._make_event("user@fake-osasi.co.jp")
-        with pytest.raises(Exception, match="osasi.co.jp"):
+        event = self._make_event("user@fake-example.com")
+        with pytest.raises(Exception, match="example.com"):
             handler(event, None)
 
     def test_uppercase_allowed(self):

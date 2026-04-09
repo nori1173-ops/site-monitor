@@ -21,7 +21,7 @@ from moto import mock_aws
 from tests.integration.api.conftest import make_api_event
 
 
-ADMIN_CREDENTIALS = base64.b64encode(b"admin:osasi034").decode()
+ADMIN_CREDENTIALS = base64.b64encode(b"admin:SecurePassword123").decode()
 
 
 def make_admin_api_event(
@@ -30,7 +30,7 @@ def make_admin_api_event(
     body: dict | None = None,
     path_parameters: dict | None = None,
     query_parameters: dict | None = None,
-    email: str = "admin@osasi.co.jp",
+    email: str = "admin@example.com",
 ) -> dict:
     """管理者認証ヘッダー付きAPI Gateway proxy event を構築"""
     event = make_api_event(
@@ -68,7 +68,7 @@ class TestDeleteUserMe:
         from api.app import handler
         return handler
 
-    def _create_site(self, handler, email: str = "user@osasi.co.jp"):
+    def _create_site(self, handler, email: str = "user@example.com"):
         body = {
             "site_name": "テストダム",
             "monitor_type": "url_check",
@@ -83,9 +83,9 @@ class TestDeleteUserMe:
 
     def test_delete_user_me_with_sites_returns_400(self):
         handler = self._import_handler()
-        self._create_site(handler, email="user@osasi.co.jp")
+        self._create_site(handler, email="user@example.com")
 
-        event = make_api_event("DELETE", "/users/me", email="user@osasi.co.jp")
+        event = make_api_event("DELETE", "/users/me", email="user@example.com")
         response = handler(event, None)
 
         assert response["statusCode"] == 400
@@ -99,7 +99,7 @@ class TestDeleteUserMe:
 
         handler = self._import_handler()
 
-        event = make_api_event("DELETE", "/users/me", email="user@osasi.co.jp")
+        event = make_api_event("DELETE", "/users/me", email="user@example.com")
         response = handler(event, None)
 
         assert response["statusCode"] == 200
@@ -136,9 +136,9 @@ class TestAdminUsers:
         mock_client.list_users.return_value = {
             "Users": [
                 {
-                    "Username": "user1@osasi.co.jp",
+                    "Username": "user1@example.com",
                     "Attributes": [
-                        {"Name": "email", "Value": "user1@osasi.co.jp"},
+                        {"Name": "email", "Value": "user1@example.com"},
                     ],
                     "Enabled": True,
                     "UserCreateDate": "2026-01-01T00:00:00Z",
@@ -155,7 +155,7 @@ class TestAdminUsers:
         body = json.loads(response["body"])
         assert body["success"] is True
         assert len(body["data"]) == 1
-        assert body["data"][0]["email"] == "user1@osasi.co.jp"
+        assert body["data"][0]["email"] == "user1@example.com"
 
     @patch("api.app._get_cognito_client")
     def test_toggle_user_status(self, mock_cognito):
@@ -166,7 +166,7 @@ class TestAdminUsers:
         handler = self._import_handler()
         event = make_admin_api_event(
             "POST",
-            "/admin/users/user1@osasi.co.jp/toggle-status",
+            "/admin/users/user1@example.com/toggle-status",
         )
         response = handler(event, None)
 
@@ -181,7 +181,7 @@ class TestAdminUsers:
         handler = self._import_handler()
         event = make_admin_api_event(
             "POST",
-            "/admin/users/user1@osasi.co.jp/reset-password",
+            "/admin/users/user1@example.com/reset-password",
         )
         response = handler(event, None)
 
@@ -196,7 +196,7 @@ class TestAdminUsers:
         handler = self._import_handler()
         event = make_admin_api_event(
             "DELETE",
-            "/admin/users/user1@osasi.co.jp",
+            "/admin/users/user1@example.com",
         )
         response = handler(event, None)
 
@@ -234,7 +234,7 @@ class TestAdminOverride:
         from api.app import handler
         return handler
 
-    def _create_site(self, handler, email: str = "owner@osasi.co.jp"):
+    def _create_site(self, handler, email: str = "owner@example.com"):
         body = {
             "site_name": "オーナーのサイト",
             "monitor_type": "url_check",
@@ -249,7 +249,7 @@ class TestAdminOverride:
 
     def test_admin_can_update_others_site(self):
         handler = self._import_handler()
-        create_resp = self._create_site(handler, email="owner@osasi.co.jp")
+        create_resp = self._create_site(handler, email="owner@example.com")
         site_id = json.loads(create_resp["body"])["data"]["site_id"]
 
         event = make_admin_api_event(
@@ -264,7 +264,7 @@ class TestAdminOverride:
                 "consecutive_threshold": 3,
                 "enabled": True,
             },
-            email="admin@osasi.co.jp",
+            email="admin@example.com",
         )
         response = handler(event, None)
 
@@ -274,13 +274,13 @@ class TestAdminOverride:
 
     def test_admin_can_delete_others_site(self):
         handler = self._import_handler()
-        create_resp = self._create_site(handler, email="owner@osasi.co.jp")
+        create_resp = self._create_site(handler, email="owner@example.com")
         site_id = json.loads(create_resp["body"])["data"]["site_id"]
 
         event = make_admin_api_event(
             "DELETE",
             f"/sites/{site_id}",
-            email="admin@osasi.co.jp",
+            email="admin@example.com",
         )
         response = handler(event, None)
 
@@ -288,7 +288,7 @@ class TestAdminOverride:
 
     def test_non_admin_cannot_update_others_site(self):
         handler = self._import_handler()
-        create_resp = self._create_site(handler, email="owner@osasi.co.jp")
+        create_resp = self._create_site(handler, email="owner@example.com")
         site_id = json.loads(create_resp["body"])["data"]["site_id"]
 
         event = make_api_event(
@@ -303,7 +303,7 @@ class TestAdminOverride:
                 "consecutive_threshold": 3,
                 "enabled": True,
             },
-            email="other@osasi.co.jp",
+            email="other@example.com",
         )
         response = handler(event, None)
         assert response["statusCode"] == 403

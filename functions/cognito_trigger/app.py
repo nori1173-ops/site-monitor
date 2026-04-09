@@ -1,4 +1,4 @@
-ALLOWED_DOMAIN = "osasi.co.jp"
+ALLOWED_DOMAIN = "example.com"
 
 
 def handler(event, context):

@@ -113,7 +113,7 @@ class TestCwCheckerBasic:
             {
                 "log_group": "TestLogGroup",
                 "message_filter": "リクエストを送信します。",
-                "json_search_word": '"account": "10206721"',
+                "json_search_word": '"account": "99999999"',
                 "search_period_minutes": 60,
             },
         ])

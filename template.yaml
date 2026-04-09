@@ -1,17 +1,17 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: Web Alive Monitoring - Main Stack
+Description: Site Monitor - Main Stack
 
 Parameters:
   StackName:
     Type: String
-    Default: WebAliveMonitoring-Dev
+    Default: SiteMonitor-Dev
   ProjectName:
     Type: String
-    Default: web-alive-monitoring
+    Default: site-monitor
   OsasiPowertoolsPython:
     Type: String
-    Default: arn:aws:lambda:ap-northeast-1:989982802989:layer:OsasiPowertoolsPython:79
+    Default: arn:aws:lambda:ap-northeast-1:123456789012:layer:OsasiPowertoolsPython:79
   LogLevel:
     Type: String
     Default: DEBUG
@@ -22,19 +22,19 @@ Parameters:
       - ERROR
   SubDomain:
     Type: String
-    Default: web-alive-dev
+    Default: site-monitor-dev
   AllowedIpAddresses:
     Type: CommaDelimitedList
-    Default: 210.225.75.184
+    Default: 203.0.113.1
   HostedZoneId:
     Type: String
-    Default: Z2TVUBVNI4RE7N
+    Default: ZXXXXXXXXXXXXX
   AcmCertificateArn:
     Type: String
-    Default: arn:aws:acm:us-east-1:989982802989:certificate/a6adb70c-a211-42cf-b43f-e290affd19f1
+    Default: arn:aws:acm:us-east-1:123456789012:certificate/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
   AdminCredentials:
     Type: String
-    Default: admin:osasi034
+    Default: admin:SecurePassword123
 
 Globals:
   Function:

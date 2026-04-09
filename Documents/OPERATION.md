@@ -1,16 +1,16 @@
-# Web Alive Monitoring 運用ドキュメント
+# Site Monitor 運用ドキュメント
 
 ## 1. 環境一覧
 
 | 項目 | 検証環境 (Dev) | 本番環境 (Production) |
 |------|---------------|---------------------|
-| スタック名 | WebAliveMonitoring-Dev | WebAliveMonitoring |
-| フロントURL | https://web-alive-dev.osasi-cloud.com | https://web-alive.osasi-cloud.com |
+| スタック名 | SiteMonitor-Dev | SiteMonitor |
+| フロントURL | https://site-monitor-dev.example-cloud.com | https://site-monitor.example-cloud.com |
 | API URL | CloudFormation Output `ApiUrl` 参照 | 同左 |
 | LogLevel | DEBUG | INFO |
 | リージョン | ap-northeast-1 | ap-northeast-1 |
 | SES リージョン | us-west-2 | us-west-2 |
-| SES ドメイン | alive.osasi-cloud.com | alive.osasi-cloud.com |
+| SES ドメイン | alive.example-cloud.com | alive.example-cloud.com |
 
 ---
 
@@ -59,12 +59,12 @@ aws cloudfront create-invalidation \
 ```bash
 # CloudFormation Output から取得
 aws cloudformation describe-stacks \
-  --stack-name WebAliveMonitoring \
+  --stack-name SiteMonitor \
   --query "Stacks[0].Outputs[?OutputKey=='WebsiteBucketName'].OutputValue" \
   --output text
 
 aws cloudformation describe-stacks \
-  --stack-name WebAliveMonitoring \
+  --stack-name SiteMonitor \
   --query "Stacks[0].Outputs[?OutputKey=='CloudFrontDistributionId'].OutputValue" \
   --output text
 ```
@@ -73,7 +73,7 @@ aws cloudformation describe-stacks \
 
 ## 3. SES ドメイン検証手順
 
-SES の EmailIdentity (`alive.osasi-cloud.com`) は SAM テンプレートで自動作成される。
+SES の EmailIdentity (`alive.example-cloud.com`) は SAM テンプレートで自動作成される。
 
 Route 53 の DKIM / SPF / MailFrom レコードもテンプレートで自動管理されるため、通常は手動操作不要。
 
@@ -81,7 +81,7 @@ Route 53 の DKIM / SPF / MailFrom レコードもテンプレートで自動管
 
 ```bash
 aws ses get-email-identity \
-  --email-identity alive.osasi-cloud.com \
+  --email-identity alive.example-cloud.com \
   --region us-west-2
 ```
 
@@ -151,12 +151,12 @@ aws ses get-email-identity \
 
 ### 5.1 管理者画面
 
-管理者画面 (`https://web-alive.osasi-cloud.com/admin/users`) からユーザーの一覧確認・管理操作を行う。
+管理者画面 (`https://site-monitor.example-cloud.com/admin/users`) からユーザーの一覧確認・管理操作を行う。
 
 **アクセス方法:**
-1. ブラウザで `https://web-alive.osasi-cloud.com/admin/users` にアクセス
+1. ブラウザで `https://site-monitor.example-cloud.com/admin/users` にアクセス
 2. Cognitoログインを行う（通常のアカウント）
-3. 管理者認証ダイアログにユーザー名・パスワードを入力（`admin` / `osasi034`）
+3. 管理者認証ダイアログにユーザー名・パスワードを入力（`admin` / `SecurePassword123`）
 
 **利用可能な操作:**
 - ユーザー一覧の確認（メール、ステータス、有効/無効、登録サイト数）
@@ -229,23 +229,23 @@ DLQ にメッセージが滞留している場合:
 
 ```bash
 # API Lambda のログ確認
-aws logs tail /aws/lambda/WebAliveMonitoring-ApiFunction --follow
+aws logs tail /aws/lambda/SiteMonitor-ApiFunction --follow
 
 # Checker Lambda のログ確認
-aws logs tail /aws/lambda/WebAliveMonitoring-CheckerFunction --follow
+aws logs tail /aws/lambda/SiteMonitor-CheckerFunction --follow
 
 # CW Checker Lambda のログ確認
-aws logs tail /aws/lambda/WebAliveMonitoring-CwCheckerFunction --follow
+aws logs tail /aws/lambda/SiteMonitor-CwCheckerFunction --follow
 
 # Notifier Lambda のログ確認
-aws logs tail /aws/lambda/WebAliveMonitoring-NotifierFunction --follow
+aws logs tail /aws/lambda/SiteMonitor-NotifierFunction --follow
 ```
 
 **特定サイトのログを絞り込む場合:**
 
 ```bash
 aws logs filter-log-events \
-  --log-group-name /aws/lambda/WebAliveMonitoring-CheckerFunction \
+  --log-group-name /aws/lambda/SiteMonitor-CheckerFunction \
   --filter-pattern '"site_id" "target-site-id"' \
   --start-time $(date -d '1 hour ago' +%s000)
 ```
@@ -258,7 +258,7 @@ aws scheduler list-schedules --group-name default
 
 # 特定サイトのスケジュール確認
 aws scheduler get-schedule \
-  --name WebAliveMonitoring-site-<site_id> \
+  --name SiteMonitor-site-<site_id> \
   --group-name default
 ```
 

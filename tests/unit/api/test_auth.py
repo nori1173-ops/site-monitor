@@ -9,13 +9,13 @@ class TestGetEmailFromClaims:
             "requestContext": {
                 "authorizer": {
                     "claims": {
-                        "email": "user@osasi.co.jp",
+                        "email": "user@example.com",
                         "sub": "12345",
                     }
                 }
             }
         }
-        assert get_email_from_claims(event) == "user@osasi.co.jp"
+        assert get_email_from_claims(event) == "user@example.com"
 
     def test_missing_email(self):
         event = {

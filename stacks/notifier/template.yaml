@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: Web Alive Monitoring - Notifier Lambda
+Description: Site Monitor - Notifier Lambda
 
 Parameters:
   StackName:
@@ -23,7 +23,7 @@ Parameters:
     Type: String
   EmailDomain:
     Type: String
-    Default: alive.osasi-cloud.com
+    Default: alive.example-cloud.com
   SesRegion:
     Type: String
     Default: us-west-2
@@ -113,7 +113,7 @@ Resources:
             Statement:
               - Effect: Allow
                 Action: ssm:GetParameter
-                Resource: !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/web-alive/*'
+                Resource: !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/site-monitor/*'
         - PolicyName: SQSReceive
           PolicyDocument:
             Version: '2012-10-17'

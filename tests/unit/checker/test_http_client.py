@@ -43,7 +43,7 @@ class TestFetchUrl:
             "http://example.com/",
             timeout=10,
             stream=True,
-            headers={"User-Agent": "WebAliveMonitoring/1.0"},
+            headers={"User-Agent": "SiteMonitor/1.0"},
         )
 
     @patch("checker.http_client.validate_url")
@@ -86,7 +86,7 @@ class TestFetchUrl:
         fetch_url("http://example.com/")
 
         call_kwargs = mock_get.call_args[1]
-        assert call_kwargs["headers"]["User-Agent"] == "WebAliveMonitoring/1.0"
+        assert call_kwargs["headers"]["User-Agent"] == "SiteMonitor/1.0"
 
     @patch("checker.http_client.validate_url")
     @patch("checker.http_client.requests.get")

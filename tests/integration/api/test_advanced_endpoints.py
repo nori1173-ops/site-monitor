@@ -54,7 +54,7 @@ class TestOptionsEndpoint:
             "pathParameters": None,
             "queryStringParameters": None,
             "requestContext": {
-                "authorizer": {"claims": {"email": "user@osasi.co.jp"}},
+                "authorizer": {"claims": {"email": "user@example.com"}},
             },
             "body": None,
         }
@@ -264,7 +264,7 @@ class TestTestNotifyEndpoint:
         response = handler(event, None)
         return json.loads(response["body"])["data"]["site_id"]
 
-    def _add_notification(self, handler, site_id: str, notif_type: str = "email", destination: str = "test@osasi.co.jp"):
+    def _add_notification(self, handler, site_id: str, notif_type: str = "email", destination: str = "test@example.com"):
         event = make_api_event(
             "POST", f"/sites/{site_id}/notifications",
             path_parameters={"site_id": site_id},
@@ -302,7 +302,7 @@ class TestTestNotifyEndpoint:
     def test_test_notify_email_success(self, mock_boto_client):
         handler = self._import_handler()
         site_id = self._create_site(handler)
-        self._add_notification(handler, site_id, "email", "alert@osasi.co.jp")
+        self._add_notification(handler, site_id, "email", "alert@example.com")
 
         mock_ses = MagicMock()
 
@@ -326,7 +326,7 @@ class TestTestNotifyEndpoint:
     def test_test_notify_email_failure(self, mock_boto_client):
         handler = self._import_handler()
         site_id = self._create_site(handler)
-        self._add_notification(handler, site_id, "email", "alert@osasi.co.jp")
+        self._add_notification(handler, site_id, "email", "alert@example.com")
 
         mock_ses = MagicMock()
         mock_ses.send_email.side_effect = Exception("SES error")
@@ -351,7 +351,7 @@ class TestTestNotifyEndpoint:
     def test_test_notify_slack_success(self, mock_boto_client):
         handler = self._import_handler()
         site_id = self._create_site(handler)
-        self._add_notification(handler, site_id, "slack", "/web-alive/webhook-url")
+        self._add_notification(handler, site_id, "slack", "/site-monitor/webhook-url")
 
         mock_ssm = MagicMock()
         mock_ssm.get_parameter.return_value = {
@@ -389,7 +389,7 @@ class TestTestNotifyEndpoint:
             "site_id": site_id,
             "notification_id": "notif-disabled",
             "type": "email",
-            "destination": "alert@osasi.co.jp",
+            "destination": "alert@example.com",
             "enabled": False,
         })
 
@@ -496,7 +496,7 @@ class TestHandlerEdgeCases:
             "pathParameters": None,
             "queryStringParameters": None,
             "requestContext": {
-                "authorizer": {"claims": {"email": "user@osasi.co.jp"}},
+                "authorizer": {"claims": {"email": "user@example.com"}},
             },
             "body": None,
         }
@@ -508,7 +508,7 @@ class TestHandlerEdgeCases:
         event = make_api_event(
             "PUT", "/sites/some-site/notifications/nonexistent",
             path_parameters={"site_id": "some-site", "notification_id": "nonexistent"},
-            body={"type": "email", "destination": "a@osasi.co.jp"},
+            body={"type": "email", "destination": "a@example.com"},
         )
         response = handler(event, None)
         assert response["statusCode"] == 404

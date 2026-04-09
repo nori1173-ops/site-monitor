@@ -2,8 +2,8 @@ const { chromium } = require('/home/miyaji/.npm/_npx/e41f203b7505f1fb/node_modul
 const fs = require('fs');
 const path = require('path');
 
-const BASE_URL = 'https://web-alive-dev.osasi-cloud.com';
-const EMAIL = 'miyaji@osasi.co.jp';
+const BASE_URL = 'https://site-monitor-dev.example-cloud.com';
+const EMAIL = 'testuser@example.com';
 const PASSWORD = 'TestPass2026!';
 const SCREENSHOT_DIR = '/tmp/e2e-screenshots';
 const RESULTS_FILE = '/tmp/e2e-results.json';
@@ -393,7 +393,7 @@ async function login(page) {
 
       // メールアドレスを入力
       const emailInput = page.locator('.v-dialog input[type="text"]').first();
-      await emailInput.fill('e2e-test@osasi.co.jp');
+      await emailInput.fill('e2e-test@example.com');
       await page.waitForTimeout(500);
 
       await screenshot(page, 'j4-1-email-form');
@@ -430,7 +430,7 @@ async function login(page) {
 
       // SSM Parameter名入力
       const ssmInput = page.locator('.v-dialog input').first();
-      await ssmInput.fill('/web-alive/slack-webhook-url');
+      await ssmInput.fill('/site-monitor/slack-webhook-url');
       await page.waitForTimeout(500);
 
       // メンション先入力

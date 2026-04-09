@@ -119,7 +119,7 @@
               <v-text-field
                 v-model="form.destination"
                 label="SSM Parameter名"
-                placeholder="/web-alive/slack-webhook-url"
+                placeholder="/site-monitor/slack-webhook-url"
                 hint="SSM Parameter StoreのSecureString名を入力"
                 persistent-hint
                 prepend-inner-icon="mdi-key"
@@ -199,7 +199,7 @@ const emailRules = [
   (v: string) => v.includes('@') || '有効なメールアドレスを入力してください',
 ]
 
-const SLACK_DEFAULT_DESTINATION = '/web-alive/slack-webhook-url'
+const SLACK_DEFAULT_DESTINATION = '/site-monitor/slack-webhook-url'
 
 const isFormValid = computed(() => {
   if (form.value.type === 'slack') return true

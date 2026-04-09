@@ -28,7 +28,7 @@ class TestSitesCRUD:
         from api.app import handler
         return handler
 
-    def _create_site(self, handler, body: dict | None = None, email: str = "user@osasi.co.jp"):
+    def _create_site(self, handler, body: dict | None = None, email: str = "user@example.com"):
         if body is None:
             body = {
                 "site_name": "テストダム",
@@ -52,7 +52,7 @@ class TestSitesCRUD:
         assert body["success"] is True
         assert "site_id" in body["data"]
         assert body["data"]["site_name"] == "テストダム"
-        assert body["data"]["created_by"] == "user@osasi.co.jp"
+        assert body["data"]["created_by"] == "user@example.com"
 
     def test_post_sites_creates_scheduler(self):
         handler = self._import_handler()
@@ -94,7 +94,7 @@ class TestSitesCRUD:
 
     def test_get_sites_filter_mine(self):
         handler = self._import_handler()
-        self._create_site(handler, email="user@osasi.co.jp")
+        self._create_site(handler, email="user@example.com")
         self._create_site(handler, body={
             "site_name": "他人のサイト",
             "monitor_type": "url_check",
@@ -103,19 +103,19 @@ class TestSitesCRUD:
             "schedule_interval_minutes": 60,
             "consecutive_threshold": 3,
             "enabled": True,
-        }, email="other@osasi.co.jp")
+        }, email="other@example.com")
 
         event = make_api_event(
             "GET", "/sites",
             query_parameters={"filter": "mine"},
-            email="user@osasi.co.jp",
+            email="user@example.com",
         )
         response = handler(event, None)
 
         assert response["statusCode"] == 200
         body = json.loads(response["body"])
         assert len(body["data"]) == 1
-        assert body["data"][0]["created_by"] == "user@osasi.co.jp"
+        assert body["data"][0]["created_by"] == "user@example.com"
 
     def test_get_site_detail(self):
         handler = self._import_handler()
@@ -160,14 +160,14 @@ class TestSitesCRUD:
                 "consecutive_threshold": 5,
                 "enabled": True,
             },
-            email="user@osasi.co.jp",
+            email="user@example.com",
         )
         response = handler(event, None)
 
         assert response["statusCode"] == 200
         body = json.loads(response["body"])
         assert body["data"]["site_name"] == "更新後のダム"
-        assert body["data"]["updated_by"] == "user@osasi.co.jp"
+        assert body["data"]["updated_by"] == "user@example.com"
 
     def test_put_site_updates_scheduler_on_schedule_change(self):
         handler = self._import_handler()
@@ -231,7 +231,7 @@ class TestSitesCRUD:
             path_parameters={"site_id": site_id},
             body={
                 "type": "email",
-                "destination": "alert@osasi.co.jp",
+                "destination": "alert@example.com",
                 "enabled": True,
             },
         )
@@ -275,7 +275,7 @@ class TestSitesCRUD:
 
     def test_put_site_forbidden_for_other_user(self):
         handler = self._import_handler()
-        create_resp = self._create_site(handler, email="owner@osasi.co.jp")
+        create_resp = self._create_site(handler, email="owner@example.com")
         site_id = json.loads(create_resp["body"])["data"]["site_id"]
 
         event = make_api_event(
@@ -290,20 +290,20 @@ class TestSitesCRUD:
                 "consecutive_threshold": 3,
                 "enabled": True,
             },
-            email="other@osasi.co.jp",
+            email="other@example.com",
         )
         response = handler(event, None)
         assert response["statusCode"] == 403
 
     def test_delete_site_forbidden_for_other_user(self):
         handler = self._import_handler()
-        create_resp = self._create_site(handler, email="owner@osasi.co.jp")
+        create_resp = self._create_site(handler, email="owner@example.com")
         site_id = json.loads(create_resp["body"])["data"]["site_id"]
 
         event = make_api_event(
             "DELETE", f"/sites/{site_id}",
             path_parameters={"site_id": site_id},
-            email="other@osasi.co.jp",
+            email="other@example.com",
         )
         response = handler(event, None)
         assert response["statusCode"] == 403

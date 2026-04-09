@@ -15,7 +15,7 @@ IoT観測システム（SaaS・Windowsソフトのアップロード機能等）
 
 ### 1.3 システム名
 
-**Web Alive Monitoring**（Web死活監視システム）
+**Site Monitor**（Web死活監視システム）
 
 ---
 
@@ -53,7 +53,7 @@ IoT観測システム（SaaS・Windowsソフトのアップロード機能等）
 通信機 → メール形式 → NetMAIL-Backend (AWS Lambda)
                         ├→ DataTransferSystem（JSON変換）→ SaaS API
                         │   ログ: "リクエストを送信します。" + account/note
-                        └→ Subscriber（メール転送）→ ASP (osasi-asp.jp)
+                        └→ Subscriber（メール転送）→ ASP (example-company-asp.jp)
                             ログ: "メールを配信します。" + source/to
 ```
 
@@ -67,13 +67,13 @@ IoT観測システム（SaaS・Windowsソフトのアップロード機能等）
 
 | 用途 | ロググループ | messageフィルタ | JSON検索ワード | 期間 |
 |------|------------|---------------|--------------|------|
-| SaaS送信監視 | DataTransferSystem2-OsBoard-Function1 | `リクエストを送信します。` | `"account": "10206721","note": "LONG"` | 60分 |
-| ASP送信監視 | NetMAIL-Backend-Subscriber | `メールを配信します。` | `10206721@ml.osasi-cloud.com` | 60分 |
+| SaaS送信監視 | DataTransferSystem2-ExBoard-Function1 | `リクエストを送信します。` | `"account": "99999999","note": "LONG"` | 60分 |
+| ASP送信監視 | NetMAIL-Backend-Subscriber | `メールを配信します。` | `99999999@ml.example-cloud.com` | 60分 |
 
 #### 2.1.4 通知
 
 - 現場ごとに通知先を個別設定
-- **メール通知**: Amazon SES経由で指定アドレスに送信。送信元: `OSASI.NET<noreply@alive.osasi-cloud.com>`（netmail-backend準拠）
+- **メール通知**: Amazon SES経由で指定アドレスに送信。送信元: `Example.NET<noreply@alive.example-cloud.com>`（netmail-backend準拠）
 - **Slack通知**: Incoming Webhook URLを設定し、指定チャンネルにメンション付きメッセージ送信
 - **状態変化時のみ通知**: 毎回の監視結果で通知するのではなく、状態が変化（正常→異常 / 異常→正常）したタイミングでのみ通知する（アラート疲れ防止）
 - 状態変化はすべて status_changes テーブルに記録し、画面から変化履歴を参照可能
@@ -130,7 +130,7 @@ IoT観測システム（SaaS・Windowsソフトのアップロード機能等）
 
 | コンポーネント | AWSサービス | 役割 |
 |---------------|------------|------|
-| フロントエンド | S3 + CloudFront + Route 53 | Vue3 SPAホスティング、IP制限、`https://web-alive.osasi-cloud.com/` |
+| フロントエンド | S3 + CloudFront + Route 53 | Vue3 SPAホスティング、IP制限、`https://site-monitor.example-cloud.com/` |
 | 認証 | Cognito User Pool | ユーザー認証・認可（セルフサインアップ、ドメイン制限） |
 | API | API Gateway + Lambda | REST APIエンドポイント（リソースポリシーでIP制限） |
 | データストア | DynamoDB | 監視設定・チェック結果・通知設定 |
@@ -139,7 +139,7 @@ IoT観測システム（SaaS・Windowsソフトのアップロード機能等）
 | CWログ監視 | SQS + Lambda | SQSキュー経由で順次実行（同時クエリ上限制御） |
 | 通知キュー | SQS | 欠測検知時に通知メッセージをキューイング（非同期化） |
 | 通知処理 | Lambda | SQSから受信し、SES/Slack Webhookで通知 |
-| メール通知 | SES | メール配信。送信元: `OSASI.NET<noreply@alive.osasi-cloud.com>`、ドメイン `alive.osasi-cloud.com` をEmailIdentityで検証 |
+| メール通知 | SES | メール配信。送信元: `Example.NET<noreply@alive.example-cloud.com>`、ドメイン `alive.example-cloud.com` をEmailIdentityで検証 |
 | Slack通知 | Lambda | Slack Incoming Webhook呼出 |
 
 ### 3.3 定期実行の仕組み（EventBridge Scheduler）
@@ -311,18 +311,18 @@ Lambda関数のログ出力量を環境変数 `LogLevel` で制御する。samco
 | 認証 | Cognito User Pool（Liteプラン）によるユーザー認証 |
 | 管理者認証 | ベーシック認証（X-Admin-Authヘッダー）による管理者機能の保護 |
 | パスワードポリシー | 最低8文字、英大小文字+数字必須、記号不要 |
-| サインアップ制限 | Cognito Pre Sign-upトリガーで社内メールドメイン（`@osasi.co.jp`）のみ許可 |
+| サインアップ制限 | Cognito Pre Sign-upトリガーで社内メールドメイン（`@example.com`）のみ許可 |
 | ログイン画面 | Vue3カスタムログイン画面（aws-amplify Auth モジュール使用） |
 | ユーザー登録 | **セルフサインアップ**（メールアドレス + パスワード → メール確認コードで本人確認） |
 | MFA | 任意（オプション）— ユーザーが自分でTOTP（Google Authenticator等）を設定可能 |
 | 操作者追跡 | 全データに登録者・最終更新者（メールアドレス）を記録し、画面から確認可能 |
 | API認可 | API Gateway + Cognito Authorizer |
 | API IP制限 | API Gatewayリソースポリシーで社内グローバルIPのみ許可（CloudFront迂回を防止） |
-| 通信 | HTTPS（CloudFront + ACM証明書、`web-alive.osasi-cloud.com`） |
+| 通信 | HTTPS（CloudFront + ACM証明書、`site-monitor.example-cloud.com`） |
 | データ | DynamoDB暗号化（AWS管理キー） |
 | シークレット管理 | Slack Webhook URLはSSM Parameter Store（SecureString）に保存 |
 | SSRF対策 | 監視対象URLのスキーム制限（http/https）、プライベートIP・メタデータエンドポイントへのアクセスをブロック |
-| SESドメイン検証 | 送信元ドメイン `alive.osasi-cloud.com` のSES EmailIdentity検証（DKIM + SPF + MailFrom）。us-west-2にデプロイ |
+| SESドメイン検証 | 送信元ドメイン `alive.example-cloud.com` のSES EmailIdentity検証（DKIM + SPF + MailFrom）。us-west-2にデプロイ |
 
 #### サインアップフロー
 
@@ -419,7 +419,7 @@ SQS (通知キュー)
   ↓
 Lambda (通知処理)
   ├── DynamoDBからsite_idで通知設定を読込
-  ├── メール通知: SES → 送信元 `OSASI.NET<noreply@alive.osasi-cloud.com>` で件名に現場名を含むメール送信
+  ├── メール通知: SES → 送信元 `Example.NET<noreply@alive.example-cloud.com>` で件名に現場名を含むメール送信
   └── Slack通知: SSM Parameter StoreからWebhook URL取得 → 送信
   失敗時 → SQS自動リトライ（最大3回）→ DLQに退避
 ```
@@ -504,7 +504,7 @@ Lambda (通知処理)
 ### 8.1 SAMスタック構成
 
 ```
-web-alive-monitoring/
+site-monitor/
 ├── template.yaml              # SAMテンプレート
 ├── samconfig.toml             # 環境別設定（dev/prod）
 ├── frontend/                  # Vue3 SPA
@@ -611,7 +611,7 @@ aws s3 sync dist/ s3://<bucket-name>/ --delete
 | **EventBridge** | 72,000回/月（1,400万回/月まで無料） | $0.00 |
 | **S3** | SPA静的ファイル 10MB + リクエスト数千件 | $0.01 |
 | **CloudFront** | HTTPS 10,000リクエスト × $0.0000012/回 | $0.01 |
-| **Route 53** | 既存osasi-cloud.comゾーンにレコード追加（ゾーン追加なし） | $0.00 |
+| **Route 53** | 既存example-cloud.comゾーンにレコード追加（ゾーン追加なし） | $0.00 |
 | **Cognito（Lite）** | 5 MAU × $0.0055/MAU | $0.03 |
 | **SQS** | CW監視キュー + 通知キュー + DLQ（100万リクエスト/月まで無料） | $0.00 |
 | **SES（メール）** | 30通/月 × $0.0001/通 | $0.00 |

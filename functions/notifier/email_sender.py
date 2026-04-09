@@ -32,8 +32,8 @@ def send_email(
     last_checked_at: str,
     message_template: str,
 ) -> None:
-    domain = os.environ.get("EMAIL_DOMAIN", "alive.osasi-cloud.com")
-    source = f"OSASI.NET<noreply@{domain}>"
+    domain = os.environ.get("EMAIL_DOMAIN", "alive.example-cloud.com")
+    source = f"Example.NET<noreply@{domain}>"
     subject = f"[Web Alive] {site_name} - 状態変化通知"
 
     prev_label = STATUS_LABELS.get(previous_status, previous_status)

@@ -25,7 +25,7 @@ def aws_env(monkeypatch):
     monkeypatch.setenv("LOG_LEVEL", "DEBUG")
     monkeypatch.setenv("SITES_TABLE_NAME", SITES_TABLE)
     monkeypatch.setenv("NOTIFICATIONS_TABLE_NAME", NOTIFICATIONS_TABLE)
-    monkeypatch.setenv("EMAIL_DOMAIN", "alive.osasi-cloud.com")
+    monkeypatch.setenv("EMAIL_DOMAIN", "alive.example-cloud.com")
     monkeypatch.setenv("SES_REGION", "us-west-2")
 
 
@@ -83,7 +83,7 @@ def _seed_notifications(dynamodb, site_id: str = "site-001"):
         "site_id": site_id,
         "notification_id": "notif-slack-001",
         "type": "slack",
-        "destination": "/web-alive/slack-webhook-url",
+        "destination": "/site-monitor/slack-webhook-url",
         "mention": "<!channel>",
         "message_template": "",
         "enabled": True,
@@ -123,7 +123,7 @@ class TestHandler:
                 message_template="確認してください",
             )
             mock_slack.assert_called_once_with(
-                ssm_parameter_name="/web-alive/slack-webhook-url",
+                ssm_parameter_name="/site-monitor/slack-webhook-url",
                 mention="<!channel>",
                 site_name="テストダム",
                 trigger_url="https://example.com/data.png",

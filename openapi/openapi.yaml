@@ -1,16 +1,16 @@
 openapi: "3.0.3"
 info:
-  title: Web Alive Monitoring API
+  title: Site Monitor API
   description: |
     IoT欠測検知Web死活監視システムのREST API。
     URL更新チェックおよびCloudWatchログ監視の設定・結果・通知を管理する。
   version: "1.0.0"
   contact:
-    name: OSASI Technos
+    name: Example Technos
 servers:
-  - url: https://api-web-alive.osasi-cloud.com
+  - url: https://api-site-monitor.example-cloud.com
     description: 本番環境
-  - url: https://api-web-alive-dev.osasi-cloud.com
+  - url: https://api-site-monitor-dev.example-cloud.com
     description: 検証環境
 
 security:
@@ -539,13 +539,13 @@ components:
       properties:
         log_group:
           type: string
-          example: "DataTransferSystem2-OsBoard-Function1"
+          example: "DataTransferSystem2-ExBoard-Function1"
         message_filter:
           type: string
           example: "リクエストを送信します。"
         json_search_word:
           type: string
-          example: '"account": "10206721"'
+          example: '"account": "99999999"'
         search_period_minutes:
           type: integer
           minimum: 1

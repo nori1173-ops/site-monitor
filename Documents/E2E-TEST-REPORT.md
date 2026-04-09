@@ -5,11 +5,11 @@
 | 項目 | 値 |
 |------|-----|
 | 実施日 | 2026-04-07 |
-| テスト対象 | https://web-alive-dev.osasi-cloud.com/ |
-| API | https://3u8z9nbvw3.execute-api.ap-northeast-1.amazonaws.com/Prod |
+| テスト対象 | https://site-monitor-dev.example-cloud.com/ |
+| API | https://yyyyyyyyyy.execute-api.ap-northeast-1.amazonaws.com/Prod |
 | ブラウザ | Chromium (headless) |
 | ツール | Playwright 1.59.1 |
-| テストユーザー | miyaji@osasi.co.jp |
+| テストユーザー | testuser@example.com |
 
 ## テスト結果サマリー
 
@@ -79,7 +79,7 @@
 |---|------|------|------|
 | 1 | S3バケット作成失敗 | バケット名に大文字（StackName由来） | SubDomain（小文字）をバケット名に使用 |
 | 2 | CAPABILITY_NAMED_IAM エラー | samconfig.tomlに未設定 | capabilities に追加 |
-| 3 | SES S3バケットのリージョン不一致 | us-west-2にap-northeast-1バケット指定 | osasi-sam-us-west-2 に修正 |
+| 3 | SES S3バケットのリージョン不一致 | us-west-2にap-northeast-1バケット指定 | example-company-sam-us-west-2 に修正 |
 | 4 | API CORS エラー（OPTIONS） | Cognito Authorizerがプリフライトに適用 | AddDefaultAuthorizerToCorsPreflight: false |
 | 5 | API CORS エラー（401応答） | Gateway ResponsesにCORSヘッダーなし | GatewayResponses追加 |
 | 6 | Lambda ImportModuleError | レイヤーの`utils`パッケージと名前衝突 | `utils/` → `helpers/` にリネーム |

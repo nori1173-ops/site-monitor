@@ -9,7 +9,7 @@ from diagrams.aws.storage import S3
 from diagrams.aws.management import Cloudwatch
 from diagrams.onprem.client import Users
 
-OUTPUT = "/mnt/c/Users/miyaji.OSASI/git/web-alive-monitoring/Documents/images/architecture"
+OUTPUT = "/mnt/c/Users/miyaji.OSASI/git/site-monitor/Documents/images/architecture"
 
 graph_attr = {
     "fontsize": "14",
@@ -34,7 +34,7 @@ edge_attr = {
 }
 
 with Diagram(
-    "Web Alive Monitoring",
+    "Site Monitor",
     filename=OUTPUT,
     outformat="png",
     direction="TB",
@@ -47,7 +47,7 @@ with Diagram(
 
     with Cluster("AWS Cloud", graph_attr={"bgcolor": "#FAFAFA", "style": "rounded"}):
 
-        r53 = Route53("Route 53\nweb-alive\n.osasi-cloud.com")
+        r53 = Route53("Route 53\nsite-monitor\n.example-cloud.com")
 
         with Cluster("フロントエンド + 認証"):
             cf = CloudFront("CloudFront\n(IP制限)")

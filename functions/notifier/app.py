@@ -13,7 +13,7 @@ import os
 import boto3
 
 try:
-    from osasi_powertools.logging import LambdaLogger
+    from example-company_powertools.logging import LambdaLogger
 
     logger = LambdaLogger()
 except ImportError:

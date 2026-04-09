@@ -1,7 +1,7 @@
 [project]
-name = "web-alive-monitoring"
+name = "site-monitor"
 version = "0.1.0"
-description = "IoT Web Alive Monitoring System"
+description = "IoT Site Monitor System"
 requires-python = ">=3.13"
 
 [project.optional-dependencies]

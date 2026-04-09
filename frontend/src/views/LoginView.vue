@@ -4,7 +4,7 @@
       <v-card class="pa-8 auth-card" width="420" elevation="0">
         <div class="text-center mb-6">
           <v-icon icon="mdi-pulse" color="primary" size="48" class="mb-2" />
-          <h1 class="text-h5 font-weight-bold text-primary">Web Alive Monitoring</h1>
+          <h1 class="text-h5 font-weight-bold text-primary">Site Monitor</h1>
           <p class="text-body-2 text-medium-emphasis mt-1">
             {{ step === 'login' ? 'ログイン' : step === 'reset-email' ? 'パスワードリセット' : step === 'reset-code' ? '新しいパスワードの設定' : 'リセット完了' }}
           </p>

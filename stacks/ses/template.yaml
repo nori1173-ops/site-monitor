@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: Web Alive Monitoring - SES EmailIdentity (alive.osasi-cloud.com)
+Description: Site Monitor - SES EmailIdentity (alive.example-cloud.com)
 
 Parameters:
   StackName:

@@ -51,7 +51,7 @@ class TestNotificationsCRUD:
             path_parameters={"site_id": site_id},
             body={
                 "type": "email",
-                "destination": "alert@osasi.co.jp",
+                "destination": "alert@example.com",
                 "message_template": "欠測検知: {site_name}",
                 "enabled": True,
             },
@@ -63,13 +63,13 @@ class TestNotificationsCRUD:
         assert body["success"] is True
         assert "notification_id" in body["data"]
         assert body["data"]["type"] == "email"
-        assert body["data"]["destination"] == "alert@osasi.co.jp"
+        assert body["data"]["destination"] == "alert@example.com"
 
     def test_get_notifications(self):
         handler = self._import_handler()
         site_id = self._create_site(handler)
 
-        for dest in ["a@osasi.co.jp", "b@osasi.co.jp"]:
+        for dest in ["a@example.com", "b@example.com"]:
             event = make_api_event(
                 "POST", f"/sites/{site_id}/notifications",
                 path_parameters={"site_id": site_id},
@@ -100,7 +100,7 @@ class TestNotificationsCRUD:
             path_parameters={"site_id": site_id},
             body={
                 "type": "email",
-                "destination": "old@osasi.co.jp",
+                "destination": "old@example.com",
                 "enabled": True,
             },
         )
@@ -112,7 +112,7 @@ class TestNotificationsCRUD:
             path_parameters={"site_id": site_id, "notification_id": nid},
             body={
                 "type": "email",
-                "destination": "new@osasi.co.jp",
+                "destination": "new@example.com",
                 "enabled": False,
             },
         )
@@ -120,7 +120,7 @@ class TestNotificationsCRUD:
 
         assert response["statusCode"] == 200
         body = json.loads(response["body"])
-        assert body["data"]["destination"] == "new@osasi.co.jp"
+        assert body["data"]["destination"] == "new@example.com"
         assert body["data"]["enabled"] is False
 
     def test_delete_notification(self):
@@ -132,7 +132,7 @@ class TestNotificationsCRUD:
             path_parameters={"site_id": site_id},
             body={
                 "type": "slack",
-                "destination": "/web-alive-monitoring/slack-webhook",
+                "destination": "/site-monitor/slack-webhook",
                 "mention": "@channel",
                 "enabled": True,
             },
@@ -160,7 +160,7 @@ class TestNotificationsCRUD:
             path_parameters={"site_id": "nonexistent"},
             body={
                 "type": "email",
-                "destination": "alert@osasi.co.jp",
+                "destination": "alert@example.com",
                 "enabled": True,
             },
         )
@@ -177,7 +177,7 @@ class TestNotificationsCRUD:
             path_parameters={"site_id": site_id},
             body={
                 "type": "slack",
-                "destination": "/web-alive-monitoring/slack-webhook",
+                "destination": "/site-monitor/slack-webhook",
                 "mention": "@here",
                 "message_template": "通知テスト",
                 "enabled": True,
@@ -208,7 +208,7 @@ class TestNotificationsCRUD:
             "POST", f"/sites/{site_id}/notifications",
             path_parameters={"site_id": site_id},
             body={
-                "destination": "alert@osasi.co.jp",
+                "destination": "alert@example.com",
                 "enabled": True,
             },
         )

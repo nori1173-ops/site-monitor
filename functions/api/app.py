@@ -1,4 +1,4 @@
-"""Web Alive Monitoring API Lambda Handler
+"""Site Monitor API Lambda Handler
 
 全13エンドポイントを単一Lambdaで処理する。
 """
@@ -12,7 +12,7 @@ from decimal import Decimal
 import boto3
 
 try:
-    from osasi_powertools.logging import LambdaLogger
+    from example-company_powertools.logging import LambdaLogger
 
     logger = LambdaLogger()
 except ImportError:
@@ -51,7 +51,7 @@ NOTIFICATIONS_TABLE = os.environ.get("NOTIFICATIONS_TABLE_NAME", "")
 STATUS_CHANGES_TABLE = os.environ.get("STATUS_CHANGES_TABLE_NAME", "")
 USER_POOL_ID = os.environ.get("USER_POOL_ID", "")
 
-ADMIN_CREDENTIALS = os.environ.get("ADMIN_CREDENTIALS", "admin:osasi034")
+ADMIN_CREDENTIALS = os.environ.get("ADMIN_CREDENTIALS", "admin:SecurePassword123")
 
 dynamodb = None
 cognito_client = None
@@ -527,7 +527,7 @@ def test_notify(event: dict) -> dict:
     if not notifications:
         return error_response("通知先が設定されていません", status_code=400)
 
-    email_domain = os.environ.get("EMAIL_DOMAIN", "alive.osasi-cloud.com")
+    email_domain = os.environ.get("EMAIL_DOMAIN", "alive.example-cloud.com")
     ses_region = os.environ.get("SES_REGION", "us-west-2")
     results = []
 
@@ -540,7 +540,7 @@ def test_notify(event: dict) -> dict:
             if notif_type == "email":
                 ses_client = boto3.client("ses", region_name=ses_region)
                 ses_client.send_email(
-                    Source=f"OSASI.NET<noreply@{email_domain}>",
+                    Source=f"Example.NET<noreply@{email_domain}>",
                     Destination={"ToAddresses": [notif["destination"]]},
                     Message={
                         "Subject": {
