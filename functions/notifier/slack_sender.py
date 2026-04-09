@@ -13,6 +13,14 @@ STATUS_LABELS = {
 _ssm_client = None
 
 
+def _convert_slack_mention(mention: str) -> str:
+    if not mention:
+        return ""
+    if mention in ("@channel", "@here", "@everyone"):
+        return f"<!{mention[1:]}>"
+    return mention
+
+
 def _get_ssm_client():
     global _ssm_client
     if _ssm_client is None:
@@ -31,12 +39,15 @@ def send_slack(
     last_checked_at: str,
 ) -> None:
     ssm = _get_ssm_client()
+    if not ssm_parameter_name.startswith("/"):
+        ssm_parameter_name = "/" + ssm_parameter_name
     result = ssm.get_parameter(Name=ssm_parameter_name, WithDecryption=True)
     webhook_url = result["Parameter"]["Value"]
 
     prev_label = STATUS_LABELS.get(previous_status, previous_status)
     new_label = STATUS_LABELS.get(new_status, new_status)
 
+    mention = _convert_slack_mention(mention)
     lines = []
     if mention:
         lines.append(mention)

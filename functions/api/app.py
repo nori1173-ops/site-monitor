@@ -89,6 +89,14 @@ def _is_admin(event: dict) -> bool:
         return False
 
 
+def _convert_slack_mention(mention: str) -> str:
+    if not mention:
+        return ""
+    if mention in ("@channel", "@here", "@everyone"):
+        return f"<!{mention[1:]}>"
+    return mention
+
+
 def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
@@ -552,11 +560,14 @@ def test_notify(event: dict) -> dict:
                 import requests as req
 
                 ssm_client = boto3.client("ssm")
+                param_name = notif["destination"]
+                if not param_name.startswith("/"):
+                    param_name = "/" + param_name
                 ssm_result = ssm_client.get_parameter(
-                    Name=notif["destination"], WithDecryption=True
+                    Name=param_name, WithDecryption=True
                 )
                 webhook_url = ssm_result["Parameter"]["Value"]
-                mention = notif.get("mention", "")
+                mention = _convert_slack_mention(notif.get("mention", ""))
                 lines = []
                 if mention:
                     lines.append(mention)
