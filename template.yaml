@@ -32,6 +32,9 @@ Parameters:
   AcmCertificateArn:
     Type: String
     Default: arn:aws:acm:us-east-1:989982802989:certificate/a6adb70c-a211-42cf-b43f-e290affd19f1
+  AdminCredentials:
+    Type: String
+    Default: admin:osasi034
 
 Globals:
   Function:
@@ -143,6 +146,7 @@ Resources:
         LogLevel: !Ref LogLevel
         AllowedIpAddresses: !Join [',', !Ref AllowedIpAddresses]
         UserPoolArn: !GetAtt AuthStack.Outputs.UserPoolArn
+        UserPoolId: !GetAtt AuthStack.Outputs.UserPoolId
         SitesTableName: !GetAtt DatabaseStack.Outputs.SitesTableName
         SitesTableArn: !GetAtt DatabaseStack.Outputs.SitesTableArn
         CheckResultsTableName: !GetAtt DatabaseStack.Outputs.CheckResultsTableName
@@ -155,6 +159,7 @@ Resources:
         NotificationQueueArn: !GetAtt QueueStack.Outputs.NotificationQueueArn
         CloudWatchLogQueueUrl: !GetAtt QueueStack.Outputs.CloudWatchLogQueueUrl
         CloudWatchLogQueueArn: !GetAtt QueueStack.Outputs.CloudWatchLogQueueArn
+        AdminCredentials: !Ref AdminCredentials
       Tags:
         - Key: Project
           Value: !Ref ProjectName

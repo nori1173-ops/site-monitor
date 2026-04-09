@@ -24,6 +24,13 @@ Resources:
       MfaConfiguration: OPTIONAL
       EnabledMfas:
         - SOFTWARE_TOKEN_MFA
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireUppercase: true
+          RequireLowercase: true
+          RequireNumbers: true
+          RequireSymbols: false
       Schema:
         - Name: email
           Required: true

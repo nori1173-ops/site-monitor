@@ -29,7 +29,10 @@ except ImportError:
     else:
         LambdaLogger = type(logger)
 
-from cw_checker.insights import run_query
+try:
+    from insights import run_query
+except ImportError:
+    from cw_checker.insights import run_query
 
 SITES_TABLE = os.environ.get("SITES_TABLE_NAME", "")
 CHECK_RESULTS_TABLE = os.environ.get("CHECK_RESULTS_TABLE_NAME", "")

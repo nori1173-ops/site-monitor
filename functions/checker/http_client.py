@@ -4,7 +4,10 @@ import hashlib
 
 import requests
 
-from checker.ssrf import validate_url
+try:
+    from ssrf import validate_url
+except ImportError:
+    from checker.ssrf import validate_url
 
 TIMEOUT_SECONDS = 10
 MAX_RESPONSE_SIZE = 10 * 1024 * 1024

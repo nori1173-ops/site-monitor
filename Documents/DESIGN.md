@@ -96,6 +96,17 @@ IoT観測システム（SaaS・Windowsソフトのアップロード機能等）
 - チェック履歴の参照
 - 状態変化履歴の参照（正常⇔異常の遷移タイミングと原因URLを時系列表示）
 
+#### 2.1.6 ユーザー管理
+
+- **パスワードリセット**: ログイン画面から「パスワードをお忘れですか？」でセルフリセット（Amplify標準機能）
+- **自ユーザー削除**: サイト登録が0件の場合、自分のアカウントを削除可能
+- **管理者画面** (`/admin/users`): ベーシック認証で保護された管理者専用画面
+  - ユーザー一覧表示（メール、ステータス、有効/無効、登録サイト数）
+  - ユーザーの有効/無効切替
+  - パスワードリセット
+  - ユーザー削除（登録サイト0件が条件）
+- **管理者オーバーライド**: 管理者認証により他ユーザーのサイトをPUT/DELETE可能（退職者対応等）
+
 ### 2.2 非機能要件
 
 | 項目 | 要件 |
@@ -298,6 +309,8 @@ Lambda関数のログ出力量を環境変数 `LogLevel` で制御する。samco
 |---------|------|
 | ネットワーク | CloudFront + S3バケットポリシーで社内グローバルIPのみ許可、Route 53でカスタムドメイン |
 | 認証 | Cognito User Pool（Liteプラン）によるユーザー認証 |
+| 管理者認証 | ベーシック認証（X-Admin-Authヘッダー）による管理者機能の保護 |
+| パスワードポリシー | 最低8文字、英大小文字+数字必須、記号不要 |
 | サインアップ制限 | Cognito Pre Sign-upトリガーで社内メールドメイン（`@osasi.co.jp`）のみ許可 |
 | ログイン画面 | Vue3カスタムログイン画面（aws-amplify Auth モジュール使用） |
 | ユーザー登録 | **セルフサインアップ**（メールアドレス + パスワード → メール確認コードで本人確認） |
@@ -354,6 +367,11 @@ Lambda関数のログ出力量を環境変数 `LogLevel` で制御する。samco
 | DELETE | /sites/{site_id}/notifications/{notification_id} | 通知設定削除 |
 | POST | /sites/{site_id}/test-check | 手動チェック実行（テスト用） |
 | POST | /sites/{site_id}/test-notify | テスト通知送信 |
+| DELETE | /users/me | 自ユーザー削除 |
+| GET | /admin/users | ユーザー一覧取得（管理者用） |
+| POST | /admin/users/{email}/toggle-status | ユーザー有効/無効切替（管理者用） |
+| POST | /admin/users/{email}/reset-password | パスワードリセット（管理者用） |
+| DELETE | /admin/users/{email} | ユーザー削除（管理者用） |
 | GET | /cloudwatch/log-groups | CWロググループ一覧取得（Lambda経由） |
 
 ---

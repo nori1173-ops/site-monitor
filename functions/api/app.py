@@ -49,8 +49,12 @@ SITES_TABLE = os.environ.get("SITES_TABLE_NAME", "")
 CHECK_RESULTS_TABLE = os.environ.get("CHECK_RESULTS_TABLE_NAME", "")
 NOTIFICATIONS_TABLE = os.environ.get("NOTIFICATIONS_TABLE_NAME", "")
 STATUS_CHANGES_TABLE = os.environ.get("STATUS_CHANGES_TABLE_NAME", "")
+USER_POOL_ID = os.environ.get("USER_POOL_ID", "")
+
+ADMIN_CREDENTIALS = os.environ.get("ADMIN_CREDENTIALS", "admin:osasi034")
 
 dynamodb = None
+cognito_client = None
 
 
 def _get_dynamodb():
@@ -58,6 +62,39 @@ def _get_dynamodb():
     if dynamodb is None:
         dynamodb = boto3.resource("dynamodb")
     return dynamodb
+
+
+def _get_cognito_client():
+    global cognito_client
+    if cognito_client is None:
+        cognito_client = boto3.client("cognito-idp")
+    return cognito_client
+
+
+def _is_admin(event: dict) -> bool:
+    """リクエストヘッダーの X-Admin-Auth を検証して管理者かどうか判定"""
+    import base64
+    headers = event.get("headers") or {}
+    auth_value = headers.get("X-Admin-Auth") or headers.get("x-admin-auth") or ""
+    if not auth_value:
+        return False
+    try:
+        decoded = base64.b64decode(auth_value).decode("utf-8")
+        if decoded == ADMIN_CREDENTIALS:
+            return True
+        logger.info("Admin auth failed", {"headers": "X-Admin-Auth present but invalid"})
+        return False
+    except Exception:
+        logger.info("Admin auth failed", {"headers": "X-Admin-Auth present but invalid"})
+        return False
+
+
+def _convert_slack_mention(mention: str) -> str:
+    if not mention:
+        return ""
+    if mention in ("@channel", "@here", "@everyone"):
+        return f"<!{mention[1:]}>"
+    return mention
 
 
 def _now_iso() -> str:
@@ -237,7 +274,7 @@ def put_site(event: dict) -> dict:
 
     old_item = existing["Item"]
 
-    if old_item.get("created_by") != email:
+    if old_item.get("created_by") != email and not _is_admin(event):
         return error_response("この操作は作成者のみ実行できます", status_code=403)
 
     now = _now_iso()
@@ -291,7 +328,7 @@ def delete_site(event: dict) -> dict:
     if "Item" not in existing:
         return error_response("Site not found", status_code=404)
 
-    if existing["Item"].get("created_by") != email:
+    if existing["Item"].get("created_by") != email and not _is_admin(event):
         return error_response("この操作は作成者のみ実行できます", status_code=403)
 
     try:
@@ -523,11 +560,14 @@ def test_notify(event: dict) -> dict:
                 import requests as req
 
                 ssm_client = boto3.client("ssm")
+                param_name = notif["destination"]
+                if not param_name.startswith("/"):
+                    param_name = "/" + param_name
                 ssm_result = ssm_client.get_parameter(
-                    Name=notif["destination"], WithDecryption=True
+                    Name=param_name, WithDecryption=True
                 )
                 webhook_url = ssm_result["Parameter"]["Value"]
-                mention = notif.get("mention", "")
+                mention = _convert_slack_mention(notif.get("mention", ""))
                 lines = []
                 if mention:
                     lines.append(mention)
@@ -561,3 +601,167 @@ def get_cloudwatch_log_groups(event: dict) -> dict:
     except Exception as e:
         logger.error("Failed to get log groups", {"error": str(e)})
         return error_response("ロググループの取得に失敗しました", status_code=500)
+
+
+# --- User management endpoints ---
+
+@route("DELETE", "/users/me")
+def delete_user_me(event: dict) -> dict:
+    """自ユーザー削除: サイト登録がなければCognitoユーザーを削除"""
+    email = get_email_from_claims(event)
+    if not email:
+        return error_response("認証情報が取得できません", status_code=401)
+
+    table = _get_dynamodb().Table(SITES_TABLE)
+    result = table.scan(
+        FilterExpression="created_by = :email",
+        ExpressionAttributeValues={":email": email},
+        Select="COUNT",
+    )
+    if result.get("Count", 0) > 0:
+        return error_response("登録済みサイトを先に削除してください", status_code=400)
+
+    try:
+        client = _get_cognito_client()
+        client.admin_delete_user(
+            UserPoolId=USER_POOL_ID,
+            Username=email,
+        )
+    except ClientError as e:
+        code = e.response["Error"]["Code"]
+        if code == "UserNotFoundException":
+            return error_response("ユーザーが存在しません", status_code=404)
+        logger.error("User deletion failed", {"error": str(e)})
+        return error_response("ユーザー削除に失敗しました", status_code=500)
+    except Exception as e:
+        logger.error("User deletion failed", {"error": str(e)})
+        return error_response("ユーザー削除に失敗しました", status_code=500)
+
+    return success_response({"message": "ユーザーを削除しました"})
+
+
+# --- Admin endpoints ---
+
+def _require_admin(event: dict) -> dict | None:
+    """管理者認証チェック。失敗時はエラーレスポンスを返す"""
+    if not _is_admin(event):
+        return error_response("管理者権限が必要です", status_code=403)
+    return None
+
+
+@route("GET", "/admin/users")
+def get_admin_users(event: dict) -> dict:
+    """Cognitoユーザー一覧を取得"""
+    auth_error = _require_admin(event)
+    if auth_error:
+        return auth_error
+
+    try:
+        client = _get_cognito_client()
+        response = client.list_users(UserPoolId=USER_POOL_ID)
+        users = []
+        for user in response.get("Users", []):
+            attrs = {a["Name"]: a["Value"] for a in user.get("Attributes", [])}
+            users.append({
+                "email": attrs.get("email", user.get("Username", "")),
+                "enabled": user.get("Enabled", True),
+                "status": user.get("UserStatus", ""),
+                "created_at": str(user.get("UserCreateDate", "")),
+            })
+        return success_response(users)
+    except Exception as e:
+        logger.error("Failed to list users", {"error": str(e)})
+        return error_response("ユーザー一覧の取得に失敗しました", status_code=500)
+
+
+@route("POST", "/admin/users/{email}/toggle-status")
+def toggle_user_status(event: dict) -> dict:
+    """ユーザーの有効/無効を切り替える"""
+    auth_error = _require_admin(event)
+    if auth_error:
+        return auth_error
+
+    target_email = event["pathParameters"]["email"]
+
+    try:
+        client = _get_cognito_client()
+        user_info = client.admin_get_user(
+            UserPoolId=USER_POOL_ID,
+            Username=target_email,
+        )
+        if user_info.get("Enabled", True):
+            client.admin_disable_user(
+                UserPoolId=USER_POOL_ID,
+                Username=target_email,
+            )
+            new_status = False
+        else:
+            client.admin_enable_user(
+                UserPoolId=USER_POOL_ID,
+                Username=target_email,
+            )
+            new_status = True
+        return success_response({"email": target_email, "enabled": new_status})
+    except ClientError as e:
+        code = e.response["Error"]["Code"]
+        if code == "UserNotFoundException":
+            return error_response("ユーザーが存在しません", status_code=404)
+        logger.error("Failed to toggle user status", {"error": str(e)})
+        return error_response("ユーザーステータスの変更に失敗しました", status_code=500)
+    except Exception as e:
+        logger.error("Failed to toggle user status", {"error": str(e)})
+        return error_response("ユーザーステータスの変更に失敗しました", status_code=500)
+
+
+@route("POST", "/admin/users/{email}/reset-password")
+def admin_reset_password(event: dict) -> dict:
+    """管理者によるパスワードリセット"""
+    auth_error = _require_admin(event)
+    if auth_error:
+        return auth_error
+
+    target_email = event["pathParameters"]["email"]
+
+    try:
+        client = _get_cognito_client()
+        client.admin_reset_user_password(
+            UserPoolId=USER_POOL_ID,
+            Username=target_email,
+        )
+        return success_response({"message": "パスワードリセットメールを送信しました"})
+    except ClientError as e:
+        code = e.response["Error"]["Code"]
+        if code == "UserNotFoundException":
+            return error_response("ユーザーが存在しません", status_code=404)
+        logger.error("Failed to reset password", {"error": str(e)})
+        return error_response("パスワードリセットに失敗しました", status_code=500)
+    except Exception as e:
+        logger.error("Failed to reset password", {"error": str(e)})
+        return error_response("パスワードリセットに失敗しました", status_code=500)
+
+
+@route("DELETE", "/admin/users/{email}")
+def admin_delete_user(event: dict) -> dict:
+    """管理者によるユーザー削除"""
+    auth_error = _require_admin(event)
+    if auth_error:
+        return auth_error
+
+    target_email = event["pathParameters"]["email"]
+
+    try:
+        client = _get_cognito_client()
+        client.admin_delete_user(
+            UserPoolId=USER_POOL_ID,
+            Username=target_email,
+        )
+        return success_response({"message": "ユーザーを削除しました"})
+    except ClientError as e:
+        code = e.response["Error"]["Code"]
+        if code == "UserNotFoundException":
+            return error_response("ユーザーが存在しません", status_code=404)
+        logger.error("Failed to delete user", {"error": str(e)})
+        return error_response("ユーザー削除に失敗しました", status_code=500)
+    except Exception as e:
+        logger.error("Failed to delete user", {"error": str(e)})
+        return error_response("ユーザー削除に失敗しました", status_code=500)
