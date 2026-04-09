@@ -64,11 +64,11 @@ aws cloudformation describe-stacks \
 
 ```bash
 # 全サイト取得
-curl -s https://web-alive.osasi-cloud.com/api/sites \
+curl -s https://uexyis2uh1.execute-api.ap-northeast-1.amazonaws.com/Prod/sites \
   -H "Authorization: Bearer $COGNITO_TOKEN" | jq .
 
 # 自分が登録したサイトのみ
-curl -s "https://web-alive.osasi-cloud.com/api/sites?filter=mine" \
+curl -s "https://uexyis2uh1.execute-api.ap-northeast-1.amazonaws.com/Prod/sites?filter=mine" \
   -H "Authorization: Bearer $COGNITO_TOKEN" | jq .
 ```
 
@@ -77,7 +77,7 @@ curl -s "https://web-alive.osasi-cloud.com/api/sites?filter=mine" \
 #### URL更新チェック
 
 ```bash
-curl -X POST https://web-alive.osasi-cloud.com/api/sites \
+curl -X POST https://uexyis2uh1.execute-api.ap-northeast-1.amazonaws.com/Prod/sites \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $COGNITO_TOKEN" \
   -d '{
@@ -96,7 +96,7 @@ curl -X POST https://web-alive.osasi-cloud.com/api/sites \
 #### CloudWatchログ検索
 
 ```bash
-curl -X POST https://web-alive.osasi-cloud.com/api/sites \
+curl -X POST https://uexyis2uh1.execute-api.ap-northeast-1.amazonaws.com/Prod/sites \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $COGNITO_TOKEN" \
   -d '{
@@ -120,14 +120,14 @@ curl -X POST https://web-alive.osasi-cloud.com/api/sites \
 ### GET /sites/{site_id} — 監視サイト詳細取得
 
 ```bash
-curl -s https://web-alive.osasi-cloud.com/api/sites/$SITE_ID \
+curl -s https://uexyis2uh1.execute-api.ap-northeast-1.amazonaws.com/Prod/sites/$SITE_ID \
   -H "Authorization: Bearer $COGNITO_TOKEN" | jq .
 ```
 
 ### PUT /sites/{site_id} — 監視サイト更新
 
 ```bash
-curl -X PUT https://web-alive.osasi-cloud.com/api/sites/$SITE_ID \
+curl -X PUT https://uexyis2uh1.execute-api.ap-northeast-1.amazonaws.com/Prod/sites/$SITE_ID \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $COGNITO_TOKEN" \
   -d '{
@@ -149,21 +149,21 @@ curl -X PUT https://web-alive.osasi-cloud.com/api/sites/$SITE_ID \
 ### DELETE /sites/{site_id} — 監視サイト削除
 
 ```bash
-curl -X DELETE https://web-alive.osasi-cloud.com/api/sites/$SITE_ID \
+curl -X DELETE https://uexyis2uh1.execute-api.ap-northeast-1.amazonaws.com/Prod/sites/$SITE_ID \
   -H "Authorization: Bearer $COGNITO_TOKEN"
 ```
 
 ### GET /sites/{site_id}/results — チェック結果一覧
 
 ```bash
-curl -s https://web-alive.osasi-cloud.com/api/sites/$SITE_ID/results \
+curl -s https://uexyis2uh1.execute-api.ap-northeast-1.amazonaws.com/Prod/sites/$SITE_ID/results \
   -H "Authorization: Bearer $COGNITO_TOKEN" | jq .
 ```
 
 ### GET /sites/{site_id}/status-changes — 状態変化履歴
 
 ```bash
-curl -s https://web-alive.osasi-cloud.com/api/sites/$SITE_ID/status-changes \
+curl -s https://uexyis2uh1.execute-api.ap-northeast-1.amazonaws.com/Prod/sites/$SITE_ID/status-changes \
   -H "Authorization: Bearer $COGNITO_TOKEN" | jq .
 ```
 
@@ -172,7 +172,7 @@ curl -s https://web-alive.osasi-cloud.com/api/sites/$SITE_ID/status-changes \
 #### メール通知
 
 ```bash
-curl -X POST https://web-alive.osasi-cloud.com/api/sites/$SITE_ID/notifications \
+curl -X POST https://uexyis2uh1.execute-api.ap-northeast-1.amazonaws.com/Prod/sites/$SITE_ID/notifications \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $COGNITO_TOKEN" \
   -d '{
@@ -185,7 +185,7 @@ curl -X POST https://web-alive.osasi-cloud.com/api/sites/$SITE_ID/notifications 
 #### Slack通知
 
 ```bash
-curl -X POST https://web-alive.osasi-cloud.com/api/sites/$SITE_ID/notifications \
+curl -X POST https://uexyis2uh1.execute-api.ap-northeast-1.amazonaws.com/Prod/sites/$SITE_ID/notifications \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $COGNITO_TOKEN" \
   -d '{
@@ -201,21 +201,21 @@ curl -X POST https://web-alive.osasi-cloud.com/api/sites/$SITE_ID/notifications 
 ### POST /sites/{site_id}/test-check — 手動チェック実行
 
 ```bash
-curl -X POST https://web-alive.osasi-cloud.com/api/sites/$SITE_ID/test-check \
+curl -X POST https://uexyis2uh1.execute-api.ap-northeast-1.amazonaws.com/Prod/sites/$SITE_ID/test-check \
   -H "Authorization: Bearer $COGNITO_TOKEN" | jq .
 ```
 
 ### POST /sites/{site_id}/test-notify — テスト通知送信
 
 ```bash
-curl -X POST https://web-alive.osasi-cloud.com/api/sites/$SITE_ID/test-notify \
+curl -X POST https://uexyis2uh1.execute-api.ap-northeast-1.amazonaws.com/Prod/sites/$SITE_ID/test-notify \
   -H "Authorization: Bearer $COGNITO_TOKEN" | jq .
 ```
 
 ### GET /cloudwatch/log-groups — CWロググループ一覧
 
 ```bash
-curl -s https://web-alive.osasi-cloud.com/api/cloudwatch/log-groups \
+curl -s https://uexyis2uh1.execute-api.ap-northeast-1.amazonaws.com/Prod/cloudwatch/log-groups \
   -H "Authorization: Bearer $COGNITO_TOKEN" | jq '.data[].logGroupName'
 ```
 
@@ -224,7 +224,7 @@ curl -s https://web-alive.osasi-cloud.com/api/cloudwatch/log-groups \
 ```python
 import requests
 
-API_BASE = "https://web-alive.osasi-cloud.com/api"
+API_BASE = "https://uexyis2uh1.execute-api.ap-northeast-1.amazonaws.com/Prod"
 headers = {
     "Content-Type": "application/json",
     "Authorization": f"Bearer {cognito_token}"
