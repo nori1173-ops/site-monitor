@@ -100,7 +100,7 @@
           <v-card-title>{{ editingNotification ? '通知先を編集' : '通知先を追加' }}</v-card-title>
           <v-divider />
           <v-card-text>
-            <v-radio-group v-model="form.type" inline class="mb-4">
+            <v-radio-group v-model="form.type" inline class="mb-4" @update:model-value="onTypeChange">
               <v-radio label="メール" value="email" />
               <v-radio label="Slack" value="slack" />
             </v-radio-group>
@@ -199,11 +199,22 @@ const emailRules = [
   (v: string) => v.includes('@') || '有効なメールアドレスを入力してください',
 ]
 
+const SLACK_DEFAULT_DESTINATION = '/web-alive/slack-webhook-url'
+
 const isFormValid = computed(() => {
+  if (form.value.type === 'slack') return true
   if (!form.value.destination) return false
   if (form.value.type === 'email' && !form.value.destination.includes('@')) return false
   return true
 })
+
+function onTypeChange(type: string | null) {
+  if (type === 'slack' && !form.value.destination) {
+    form.value.destination = SLACK_DEFAULT_DESTINATION
+  } else if (type === 'email' && form.value.destination === SLACK_DEFAULT_DESTINATION) {
+    form.value.destination = ''
+  }
+}
 
 function openAddDialog() {
   editingNotification.value = null
@@ -235,9 +246,12 @@ function showMessage(text: string, color: string = 'success') {
 
 async function handleSaveNotification() {
   saving.value = true
+  const destination = (form.value.type === 'slack' && !form.value.destination)
+    ? SLACK_DEFAULT_DESTINATION
+    : form.value.destination
   const data = {
     type: form.value.type,
-    destination: form.value.destination,
+    destination,
     mention: form.value.mention,
     message_template: form.value.messageTemplate,
     enabled: true,
